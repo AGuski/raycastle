@@ -6,6 +6,7 @@ import wallFireAnimImg from './assets/wall_stone_wood_fire_anim_large.png';
 import wallNofireImg from './assets/wall_stone_wood_nofire_1_large.png';
 import wallPaintingImg from './assets/wall_stone_wood_painting_1_large.png';
 import wallControlsImg from './assets/wall_stone_wood_controls_large.png';
+import skyboxImg from './assets/skybox.png';
 
 export class World {
   private wallGrid: MapCell[];
@@ -34,11 +35,7 @@ export class World {
 
   constructor(private size: number) {
     this.wallGrid = new Array<MapCell>(size * size);
-    this.skybox = new Bitmap(
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Chalbi_Desert_Panorama.jpg/1200px-Chalbi_Desert_Panorama.jpg',
-      2000,
-      750
-    );
+    this.skybox = new Bitmap(skyboxImg, 4096, 1024);
     this.light = 0;
   }
 
@@ -135,7 +132,14 @@ export class World {
   }
 
   update(seconds: number): void {
-    this.deltaTime = this.deltaTime + seconds;
+    this.deltaTime += seconds;
+
+    // Lighting flicker disabled for now — re-enable when ready:
+    // if (this.light > 0) {
+    //   this.light = Math.max(this.light - 10 * seconds, 0);
+    // } else if (Math.random() * 5 < seconds) {
+    //   this.light = 2;
+    // }
     this.light = 1;
   }
 }

@@ -1,37 +1,38 @@
 import './style.css';
+import Stats from 'stats.js/src/Stats.js';
 import { Bitmap } from './block';
 import { World } from './world';
 import { Sprite } from './sprite';
 import lampstandImg from './assets/lampstand_1_large.png';
+import weaponKnifeImg from './assets/weapon_knife.png';
 import { ControlState, ControlStates, MapCell, RayStep, WallProjection } from './types';
 
 function isOpenCell(cell: MapCell): cell is 0 | -1 {
   return cell === 0 || cell === -1;
 }
 
-const script = document.createElement('script');
+let debugEnabled = false;
 
-script.onload = function () {
-  const stats = new Stats();
-  document.body.appendChild(stats.dom);
-  requestAnimationFrame(function loop() {
-    stats.update();
-    requestAnimationFrame(loop);
-  });
-};
-
-script.src = '//mrdoob.github.io/stats.js/build/stats.min.js';
-document.body.appendChild(script);
+const stats = new Stats();
+stats.domElement.style.position = 'fixed';
+stats.domElement.style.top = '0';
+stats.domElement.style.left = '0';
+stats.domElement.style.zIndex = '10000';
+document.body.appendChild(stats.domElement);
 
 const CIRCLE = Math.PI * 2;
 const MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
 
 class Controls {
-  private codes: Record<number, ControlState> = {
-    37: 'left',
-    39: 'right',
-    38: 'forward',
-    40: 'backward'
+  private codes: Record<string, ControlState> = {
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
+    ArrowUp: 'forward',
+    ArrowDown: 'backward',
+    KeyA: 'left',
+    KeyD: 'right',
+    KeyW: 'forward',
+    KeyS: 'backward'
   };
   public states: ControlStates = {
     left: false,
@@ -41,8 +42,8 @@ class Controls {
   };
 
   constructor() {
-    document.addEventListener('keydown', this.onKey.bind(this, true), false);
-    document.addEventListener('keyup', this.onKey.bind(this, false), false);
+    document.addEventListener('keydown', this.onKeyDown.bind(this), false);
+    document.addEventListener('keyup', this.onKeyUp.bind(this), false);
     document.addEventListener('touchstart', this.onTouch.bind(this), false);
     document.addEventListener('touchmove', this.onTouch.bind(this), false);
     document.addEventListener('touchend', this.onTouchEnd.bind(this), false);
@@ -52,9 +53,9 @@ class Controls {
     const t = e.touches[0];
     this.onTouchEnd(e);
     if (!t) return;
-    if (t.pageY < window.innerHeight * 0.5) this.setState(true, 38);
-    else if (t.pageX < window.innerWidth * 0.5) this.setState(true, 37);
-    else if (t.pageY > window.innerWidth * 0.5) this.setState(true, 39);
+    if (t.pageY < window.innerHeight * 0.5) this.setAction('forward', true);
+    else if (t.pageX < window.innerWidth * 0.5) this.setAction('left', true);
+    else this.setAction('right', true);
   }
 
   onTouchEnd(e: TouchEvent): void {
@@ -63,16 +64,38 @@ class Controls {
     e.stopPropagation();
   }
 
-  onKey(val: boolean, e: KeyboardEvent): void {
-    this.setState(val, e.keyCode);
+  onKeyDown(e: KeyboardEvent): void {
+    if (e.metaKey || e.ctrlKey || e.altKey) {
+      return;
+    }
+
+    if (e.code === 'F3') {
+      debugEnabled = !debugEnabled;
+      e.preventDefault();
+      return;
+    }
+
+    const state = this.codes[e.code];
+    if (!state) return;
+
+    this.states[state] = true;
     e.preventDefault();
-    e.stopPropagation();
   }
 
-  private setState(val: boolean, keyCode: number): void {
-    const state = this.codes[keyCode];
+  onKeyUp(e: KeyboardEvent): void {
+    if (e.metaKey || e.ctrlKey || e.altKey) {
+      return;
+    }
+
+    const state = this.codes[e.code];
     if (!state) return;
-    this.states[state] = val;
+
+    this.states[state] = false;
+    e.preventDefault();
+  }
+
+  private setAction(action: ControlState, val: boolean): void {
+    this.states[action] = val;
   }
 }
 
@@ -87,14 +110,10 @@ class Player {
   constructor(
     public x: number,
     public y: number,
-    public direction: number
+    public direction: number,
+    weapon: Bitmap
   ) {
-    this.weapon = new Bitmap(
-      'https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Flearnbritenglish.files.wordpress.com%2F2013%2F09%2Fknife_fo3.png&f=1',
-      319,
-      320
-    );
-    this._paces = 0;
+    this.weapon = weapon;
   }
 
   rotate(angle: number): void {
@@ -123,7 +142,6 @@ class Camera {
   private height: number;
   private spacing: number;
   private range: number;
-  private lightRange: number;
   private scale: number;
   private focalLength: number;
 
@@ -143,7 +161,6 @@ class Camera {
     this.spacing = this.width / resolution;
     this.focalLength = focalLength;
     this.range = MOBILE ? 8 : 30;
-    this.lightRange = 7;
     this.scale = (this.width + this.height) / 1200;
   }
 
@@ -154,11 +171,30 @@ class Camera {
   }
 
   private drawSky(_direction: number, _sky: Bitmap, _ambient: number): void {
+    const skyHeight = this.height * 0.5;
+
     this.ctx.save();
     this.ctx.fillStyle = '#1a120a';
-    this.ctx.fillRect(0, 0, this.width, this.height * 0.5);
+    this.ctx.fillRect(0, 0, this.width, skyHeight);
+
+    // Skybox disabled for now — re-enable when ready:
+    // const width = sky.width * (this.height / sky.height) * 2;
+    // const left = (direction / CIRCLE) * -width;
+    // this.ctx.drawImage(sky.image, left, 0, width, skyHeight);
+    // if (left < width - this.width) {
+    //   this.ctx.drawImage(sky.image, left + width, 0, width, skyHeight);
+    // }
+
     this.ctx.fillStyle = '#654321';
-    this.ctx.fillRect(0, this.height * 0.5, this.width, this.height * 0.5);
+    this.ctx.fillRect(0, skyHeight, this.width, this.height - skyHeight);
+
+    // Ambient lighting overlay disabled for now:
+    // if (ambient > 0) {
+    //   this.ctx.fillStyle = '#ffffff';
+    //   this.ctx.globalAlpha = ambient * 0.1;
+    //   this.ctx.fillRect(0, skyHeight, this.width, this.height - skyHeight);
+    // }
+
     this.ctx.restore();
   }
 
@@ -252,20 +288,25 @@ class Camera {
           }
         }
 
-        if (step.offset! <= 0.025 || step.offset! >= 0.975) {
-          ctx.globalAlpha = 0.7;
+        if (debugEnabled) {
+          if (step.offset! <= 0.025 || step.offset! >= 0.975) {
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(left, wall.top, width, wall.height);
+          }
           ctx.fillStyle = '#00ff00';
-          ctx.fillRect(left, wall.top, width, wall.height);
+          ctx.globalAlpha = 0.7;
+          ctx.fillRect(left, wall.top, width, 1);
+          ctx.fillRect(left, wall.top + wall.height, width, 1);
         }
-        ctx.fillRect(left, wall.top, width, 1);
-        ctx.fillRect(left, wall.top + wall.height, width, 1);
 
         ctx.fillStyle = '#000000';
-        ctx.globalAlpha = Math.max(
-          (step.distance + step.shading!) / this.lightRange - map.light,
-          0
-        );
-        ctx.fillRect(left, wall.top, width, wall.height);
+        // Dynamic wall lighting disabled for now (lightRange was 7):
+        // ctx.globalAlpha = Math.max(
+        //   (step.distance + step.shading!) / 7 - map.light,
+        //   0
+        // );
+        // ctx.fillRect(left, wall.top, width, wall.height);
       }
 
       if (step.sprite) {
@@ -319,32 +360,12 @@ class GameLoop {
   frame(time: number): void {
     const seconds = (time - this.lastTime) / 1000;
     this.lastTime = time;
-    if (seconds < 0.2) this.callback(seconds);
+    if (seconds < 0.2) {
+      this.callback(seconds);
+      stats.update();
+    }
     requestAnimationFrame(this.frame);
   }
-}
-
-export function loadImageData(
-  srcString: string,
-  width: number,
-  height: number
-): Promise<ImageBitmap> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const ofc = document.createElement('canvas').getContext('2d');
-      if (!ofc) {
-        throw new Error('Canvas 2D context is not available');
-      }
-      ofc.drawImage(img, 0, 0);
-      const imageData = ofc.getImageData(0, 0, width, height);
-
-      createImageBitmap(imageData).then((imageBitmap) => {
-        resolve(imageBitmap);
-      });
-    };
-    img.src = srcString;
-  });
 }
 
 const display = document.getElementById('display');
@@ -352,7 +373,8 @@ if (!display || !(display instanceof HTMLCanvasElement)) {
   throw new Error('Canvas element #display not found');
 }
 
-const player = new Player(15.3, -1.2, Math.PI * 0.3);
+const weapon = new Bitmap(weaponKnifeImg, 1200, 950);
+const player = new Player(15.3, -1.2, Math.PI * 0.3, weapon);
 const map = new World(320);
 const controls = new Controls();
 const camera = new Camera(display, MOBILE ? 160 : 640, 0.6);
