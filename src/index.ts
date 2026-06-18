@@ -1,15 +1,19 @@
 import './style.css';
 import Stats from 'stats.js/src/Stats.js';
-import { Bitmap } from './block';
+import { Bitmap, WallDirection } from './block';
 import { World } from './world';
 import { Sprite } from './sprite';
 import lampstandImg from './assets/lampstand_1_large.png';
 import weaponKnifeImg from './assets/weapon_knife.png';
-import { ControlState, ControlStates, MapCell, RayStep, WallProjection } from './types';
-
-function isOpenCell(cell: MapCell): cell is 0 | -1 {
-  return cell === 0 || cell === -1;
-}
+import {
+  ControlState,
+  ControlStates,
+  isOpenCell,
+  MAP_EMPTY,
+  MAP_OUT_OF_BOUNDS,
+  RayStep,
+  WallProjection
+} from './types';
 
 let debugEnabled = false;
 
@@ -138,15 +142,15 @@ class Player {
 
 class Camera {
   private ctx: CanvasRenderingContext2D;
-  private width: number;
-  private height: number;
-  private spacing: number;
+  private width = 0;
+  private height = 0;
+  private spacing = 0;
   private range: number;
-  private scale: number;
+  private scale = 0;
   private focalLength: number;
 
   constructor(
-    canvas: HTMLCanvasElement,
+    private canvas: HTMLCanvasElement,
     private resolution: number,
     focalLength = 0.8
   ) {
@@ -156,11 +160,20 @@ class Camera {
     }
     this.ctx = ctx;
     this.ctx.imageSmoothingEnabled = false;
-    this.width = canvas.width = window.innerWidth * 0.5;
-    this.height = canvas.height = window.innerHeight * 0.5;
-    this.spacing = this.width / resolution;
     this.focalLength = focalLength;
     this.range = MOBILE ? 8 : 30;
+    this.resize();
+    window.addEventListener('resize', this.onResize);
+  }
+
+  private onResize = (): void => {
+    this.resize();
+  };
+
+  private resize(): void {
+    this.width = this.canvas.width = window.innerWidth * 0.5;
+    this.height = this.canvas.height = window.innerHeight * 0.5;
+    this.spacing = this.width / this.resolution;
     this.scale = (this.width + this.height) / 1200;
   }
 
@@ -243,7 +256,7 @@ class Camera {
       const invY = player.y > step.y;
       const invX = player.x > step.x;
 
-      const getDir = (): number => {
+      const getDir = (): WallDirection => {
         if (stepXFrac === 0) {
           return invX ? 0 : 2;
         }
@@ -254,33 +267,33 @@ class Camera {
       if (s === hit) {
         let wall: WallProjection;
 
-        if (step.block === -1 || step.block === 0) {
+        if (step.block === MAP_EMPTY || step.block === MAP_OUT_OF_BOUNDS) {
           wall = this.project(step.block, angle, step.distance);
         } else {
           wall = this.project(step.block.height, angle, step.distance);
           ctx.globalAlpha = 1;
-          if (step.block.sides[dir].texture) {
-            const side = step.block.sides[dir];
-            let textureX = Math.floor(side.texture!.width * step.offset!);
+          const side = step.block.sides[dir];
+          if (side.texture) {
+            let textureX = Math.floor(side.texture.width * step.offset);
             if (side.frames) {
               const currentFrame = Math.floor((map.deltaTime * 8) % side.frames);
               textureX =
                 textureX / side.frames +
-                (side.texture!.width / side.frames) * currentFrame;
+                (side.texture.width / side.frames) * currentFrame;
             }
             ctx.drawImage(
-              side.texture!.image,
+              side.texture.image,
               textureX,
               0,
               1,
-              side.texture!.height,
+              side.texture.height,
               left,
               wall.top,
               width,
               wall.height
             );
-          } else if (step.block.sides[dir].color) {
-            ctx.fillStyle = step.block.sides[dir].color!;
+          } else if (side.color) {
+            ctx.fillStyle = side.color;
             ctx.fillRect(left, wall.top, width, wall.height);
           } else {
             ctx.fillStyle = '#000000';
@@ -289,7 +302,7 @@ class Camera {
         }
 
         if (debugEnabled) {
-          if (step.offset! <= 0.025 || step.offset! >= 0.975) {
+          if (step.offset <= 0.025 || step.offset >= 0.975) {
             ctx.globalAlpha = 0.7;
             ctx.fillStyle = '#00ff00';
             ctx.fillRect(left, wall.top, width, wall.height);
@@ -303,7 +316,7 @@ class Camera {
         ctx.fillStyle = '#000000';
         // Dynamic wall lighting disabled for now (lightRange was 7):
         // ctx.globalAlpha = Math.max(
-        //   (step.distance + step.shading!) / 7 - map.light,
+        //   (step.distance + step.shading) / 7 - map.light,
         //   0
         // );
         // ctx.fillRect(left, wall.top, width, wall.height);
@@ -312,7 +325,7 @@ class Camera {
       if (step.sprite) {
         const sprite = step.sprite;
         const wall = this.project(1, angle, step.distance);
-        const textureX = Math.floor(sprite.texture.width * step.offset!);
+        const textureX = Math.floor(sprite.texture.width * step.offset);
 
         ctx.globalAlpha = 1;
         ctx.drawImage(
@@ -381,7 +394,7 @@ const camera = new Camera(display, MOBILE ? 160 : 640, 0.6);
 const loop = new GameLoop();
 
 map.randomize();
-map.sprites.push(new Sprite(new Bitmap(lampstandImg, 1024, 1024), 15, -3));
+map.addSprite(new Sprite(new Bitmap(lampstandImg, 1024, 1024), 15, -3));
 
 loop.start((seconds) => {
   map.update(seconds);

@@ -15,6 +15,7 @@ Inspired by [A first-person engine in 265 lines](http://www.playfuljs.com/a-firs
 
 - TypeScript 6
 - Webpack 5
+- ESLint (typescript-eslint)
 - HTML Canvas 2D
 
 ## Prerequisites
@@ -45,12 +46,14 @@ Open [http://localhost:4200](http://localhost:4200) in your browser.
 | `npm start` | Start webpack-dev-server with hot reload |
 | `npm run build` | Build a production bundle to `dist/` |
 | `npm run typecheck` | Run the TypeScript compiler without emitting files |
+| `npm run lint` | Run ESLint on `src/` |
 
 ## Controls
 
 | Input | Action |
 | --- | --- |
-| Arrow keys | Move and turn |
+| Arrow keys / WASD | Move and turn |
+| F3 | Toggle debug overlay |
 | Touch (mobile) | Tap upper half to move forward; left/right halves to turn |
 
 ## Project structure

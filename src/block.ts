@@ -1,30 +1,24 @@
 export class Bitmap {
+  readonly image: HTMLImageElement;
 
-  public image: HTMLImageElement;
-  
   constructor(src: string, public width: number, public height: number) {
     this.image = new Image();
     this.image.src = src;
-    this.width = width;
-    this.height = height;
   }
 }
 
-export class BlockSide {
+export interface BlockSide {
   texture?: Bitmap;
   color?: string;
   frames?: number;
 }
 
-export class Block {
-  sides: BlockSide[] = new Array(4);
-  height: number;
+export type BlockSides = [BlockSide, BlockSide, BlockSide, BlockSide];
+export type WallDirection = 0 | 1 | 2 | 3;
 
+export class Block {
   constructor(
-    sides: BlockSide[],
-    height = 1
-  ) {
-    this.sides = sides;
-    this.height = height;
-  }
+    public sides: BlockSides,
+    public height = 1
+  ) {}
 }
