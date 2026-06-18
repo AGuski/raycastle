@@ -60,12 +60,25 @@ Open [http://localhost:4200](http://localhost:4200) in your browser.
 
 ```
 src/
-  index.ts      Entry point, game loop, rendering, and input
-  world.ts      Map generation and ray casting
-  block.ts      Wall textures and block definitions
-  sprite.ts     Sprite entities
-  assets/       Texture images
-  types.ts      Shared TypeScript types
+  main.ts           Bootstrap: wire systems and start the game loop
+  types.ts          Shared TypeScript types
+  core/
+    config.ts       Game constants (speed, FOV, resolution, etc.)
+    debug.ts        Debug overlay toggle state
+    input.ts        Keyboard and touch controls
+  engine/
+    assets.ts       Bitmap factory and image preloading
+    raycaster.ts    Ray casting math
+    renderer.ts     Canvas rendering (walls, sprites, sky)
+    gameLoop.ts     requestAnimationFrame loop
+    statsOverlay.ts FPS overlay setup
+  game/
+    block.ts        Wall textures and block definitions
+    world.ts        Map data, sprites, and world queries
+    player.ts       Player movement and state
+    entities/
+      sprite.ts     Sprite entities
+  assets/           Texture images
 ```
 
 ## License

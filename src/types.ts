@@ -1,5 +1,5 @@
-import { Block } from './block';
-import { Sprite } from './sprite';
+import { Block } from './game/block';
+import { Sprite } from './game/entities/sprite';
 
 export type ControlState = 'left' | 'right' | 'forward' | 'backward';
 
