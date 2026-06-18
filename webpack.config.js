@@ -27,11 +27,7 @@ module.exports = {
       },
       {
         test: /\.(png|svg|jpg|gif)$/,
-        use: [
-          {
-            loader: 'file-loader'
-          }
-        ],
+        type: 'asset/resource',
         exclude: /node_modules/
       }
     ]
@@ -44,7 +40,9 @@ module.exports = {
     path: path.resolve(__dirname, 'dist')
   },
   devServer: {
-    contentBase: path.join(__dirname, 'dist'),
+    static: {
+      directory: path.join(__dirname, 'dist')
+    },
     compress: true,
     port: 4200
   }
