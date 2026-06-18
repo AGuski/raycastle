@@ -1,2 +1,4 @@
 node_modules
 workfiles
+.env
+dist
