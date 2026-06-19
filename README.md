@@ -4,6 +4,8 @@ A browser-based ray casting engine playground — a Wolfenstein-style first-pers
 
 Inspired by [A first-person engine in 265 lines](http://www.playfuljs.com/a-first-person-engine-in-265-lines/) by PlayfulJS.
 
+**Live demo:** [raycastle.vercel.app](https://raycastle.vercel.app/)
+
 ## Features
 
 - Real-time ray casting with textured walls and animated surfaces
