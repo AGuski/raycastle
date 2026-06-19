@@ -20,6 +20,9 @@ export class Renderer {
   private spacing = 0;
   private scale = 0;
   private focalLength: number;
+  private readonly fogStart = CONFIG.fogStart;
+  private readonly fogInvRange =
+    1 / (CONFIG.fogEnd - CONFIG.fogStart);
   private readonly zBuffer: Float32Array;
   private readonly rayCache: RayStep[][];
   private readonly floorCanvas: HTMLCanvasElement;
@@ -89,16 +92,19 @@ export class Renderer {
 
   private drawColumns(player: Player, map: World): void {
     const floorTex = map.floorTexture.pixelBytes;
-    if (!floorTex) {
-      throw new Error('Floor texture pixel data is not loaded');
+    const ceilingTex = map.ceilingTexture.pixelBytes;
+    if (!floorTex || !ceilingTex) {
+      throw new Error('Floor or ceiling texture pixel data is not loaded');
     }
 
     this.zBuffer.fill(Infinity);
     this.floorBuffer.fill(0);
 
     const halfHeight = this.height * 0.5;
-    const texW = map.floorTexture.width;
-    const texH = map.floorTexture.height;
+    const floorW = map.floorTexture.width;
+    const floorH = map.floorTexture.height;
+    const ceilingW = map.ceilingTexture.width;
+    const ceilingH = map.ceilingTexture.height;
     const maxZ = this.renderRange;
     const dir = player.direction;
     const focal = this.focalLength;
@@ -127,8 +133,11 @@ export class Renderer {
 
     this.fillFloorCeiling(
       floorTex,
-      texW,
-      texH,
+      floorW,
+      floorH,
+      ceilingTex,
+      ceilingW,
+      ceilingH,
       halfHeight,
       maxZ,
       focal,
@@ -181,8 +190,11 @@ export class Renderer {
 
   private fillFloorCeiling(
     floorTex: Uint8ClampedArray,
-    texW: number,
-    texH: number,
+    floorW: number,
+    floorH: number,
+    ceilingTex: Uint8ClampedArray,
+    ceilingW: number,
+    ceilingH: number,
     halfHeight: number,
     maxZ: number,
     focal: number,
@@ -193,6 +205,8 @@ export class Renderer {
     const data = this.floorBuffer;
     const res = this.resolution;
     const rowStride = this.floorRowStride;
+    const floorMask = floorW - 1;
+    const ceilingMask = ceilingW - 1;
 
     for (let column = 0; column < res; column++) {
       const camX = column / res - 0.5;
@@ -204,6 +218,7 @@ export class Renderer {
       const sinRay = Math.sin(dir + angle);
       const invCos = 1 / cosAngle;
       const zLimit = this.zBuffer[column];
+      const colOffset = column * 4;
 
       for (let y = this.height - 1; y > halfHeight; y--) {
         const z = halfHeight / (y - halfHeight);
@@ -211,20 +226,23 @@ export class Renderer {
 
         const worldX = px + z * cosRay * invCos;
         const worldY = py + z * sinRay * invCos;
-        const texX = Math.min(
-          texW - 1,
-          Math.max(0, (worldX - Math.floor(worldX)) * texW | 0)
-        );
-        const texY = Math.min(
-          texH - 1,
-          Math.max(0, (worldY - Math.floor(worldY)) * texH | 0)
-        );
-        const src = (texY * texW + texX) << 2;
-        const dst = y * rowStride + column * 4;
+        const texX = (worldX - Math.floor(worldX)) * floorW | 0;
+        const texY = (worldY - Math.floor(worldY)) * floorH | 0;
+        const src =
+          ((texY & floorMask) * floorW + (texX & floorMask)) << 2;
+        const dst = y * rowStride + colOffset;
+        const fog = this.fogAmount(z);
 
-        data[dst] = floorTex[src];
-        data[dst + 1] = floorTex[src + 1];
-        data[dst + 2] = floorTex[src + 2];
+        if (fog > 0) {
+          const shade = 1 - fog;
+          data[dst] = floorTex[src] * shade;
+          data[dst + 1] = floorTex[src + 1] * shade;
+          data[dst + 2] = floorTex[src + 2] * shade;
+        } else {
+          data[dst] = floorTex[src];
+          data[dst + 1] = floorTex[src + 1];
+          data[dst + 2] = floorTex[src + 2];
+        }
         data[dst + 3] = 255;
       }
 
@@ -234,23 +252,48 @@ export class Renderer {
 
         const worldX = px + z * cosRay * invCos;
         const worldY = py + z * sinRay * invCos;
-        const texX = Math.min(
-          texW - 1,
-          Math.max(0, (worldX - Math.floor(worldX)) * texW | 0)
-        );
-        const texY = Math.min(
-          texH - 1,
-          Math.max(0, (worldY - Math.floor(worldY)) * texH | 0)
-        );
-        const src = (texY * texW + texX) << 2;
-        const dst = y * rowStride + column * 4;
+        const texX = (worldX - Math.floor(worldX)) * ceilingW | 0;
+        const texY = (worldY - Math.floor(worldY)) * ceilingH | 0;
+        const src =
+          ((texY & ceilingMask) * ceilingW + (texX & ceilingMask)) << 2;
+        const dst = y * rowStride + colOffset;
+        const fog = this.fogAmount(z);
 
-        data[dst] = floorTex[src];
-        data[dst + 1] = floorTex[src + 1];
-        data[dst + 2] = floorTex[src + 2];
+        if (fog > 0) {
+          const shade = 1 - fog;
+          data[dst] = ceilingTex[src] * shade;
+          data[dst + 1] = ceilingTex[src + 1] * shade;
+          data[dst + 2] = ceilingTex[src + 2] * shade;
+        } else {
+          data[dst] = ceilingTex[src];
+          data[dst + 1] = ceilingTex[src + 1];
+          data[dst + 2] = ceilingTex[src + 2];
+        }
         data[dst + 3] = 255;
       }
     }
+  }
+
+  private fogAmount(z: number): number {
+    if (z <= this.fogStart) return 0;
+    const t = (z - this.fogStart) * this.fogInvRange;
+    return t > 1 ? 1 : t;
+  }
+
+  private applyFogOverlay(
+    left: number,
+    top: number,
+    width: number,
+    height: number,
+    z: number
+  ): void {
+    const fog = this.fogAmount(z);
+    if (fog <= 0) return;
+
+    this.ctx.fillStyle = '#000000';
+    this.ctx.globalAlpha = fog;
+    this.ctx.fillRect(left, top, width, height);
+    this.ctx.globalAlpha = 1;
   }
 
   private drawSprites(player: Player, map: World): void {
@@ -374,6 +417,7 @@ export class Renderer {
 
       if (s === hit) {
         let wall: WallProjection;
+        const wallZ = this.perpDistance(step.distance, angle);
 
         if (step.block === MAP_EMPTY || step.block === MAP_OUT_OF_BOUNDS) {
           wall = this.project(step.block, angle, step.distance);
@@ -409,6 +453,8 @@ export class Renderer {
             ctx.fillStyle = '#000000';
             ctx.fillRect(left, wall.top, width, wall.height);
           }
+
+          this.applyFogOverlay(left, wall.top, width, wall.height, wallZ);
         }
 
         if (isDebugEnabled()) {
@@ -422,14 +468,6 @@ export class Renderer {
           ctx.fillRect(left, wall.top, width, 1);
           ctx.fillRect(left, wall.top + wall.height, width, 1);
         }
-
-        ctx.fillStyle = '#000000';
-        // Dynamic wall lighting disabled for now (lightRange was 7):
-        // ctx.globalAlpha = Math.max(
-        //   (step.distance + step.shading) / 7 - map.light,
-        //   0
-        // );
-        // ctx.fillRect(left, wall.top, width, wall.height);
       }
 
       ctx.fillStyle = '#ffffff';

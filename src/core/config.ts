@@ -21,6 +21,8 @@ export const CONFIG = {
   lampSpawnProbability: 0.08,
   lampPlayerClearRadius: 2,
   animationFps: 8,
+  fogStart: 2,
+  fogEnd: 12,
   textures: {
     wallBooks: { width: 1024, height: 1024 },
     wallFireAnim: { width: 4096, height: 1024, frames: 4 },
@@ -30,6 +32,7 @@ export const CONFIG = {
     skybox: { width: 4096, height: 1024 },
     weapon: { width: 1200, height: 950 },
     lampstand: { width: 1024, height: 1024 },
-    floorWood: { width: 1024, height: 1024 }
+    floorWood: { width: 1024, height: 1024 },
+    ceilingWood: { width: 1024, height: 1024 }
   }
 } as const;
