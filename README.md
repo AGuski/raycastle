@@ -14,7 +14,7 @@ Inspired by [A first-person engine in 265 lines](http://www.playfuljs.com/a-firs
 ## Tech stack
 
 - TypeScript 6
-- Webpack 5
+- Vite 7
 - ESLint (typescript-eslint)
 - HTML Canvas 2D
 
@@ -43,8 +43,9 @@ Open [http://localhost:4200](http://localhost:4200) in your browser.
 
 | Command | Description |
 | --- | --- |
-| `npm start` | Start webpack-dev-server with hot reload |
-| `npm run build` | Build a production bundle to `dist/` |
+| `npm start` | Start the Vite dev server with hot reload |
+| `npm run build` | Build for production to `dist/` |
+| `npm run preview` | Preview the production build locally |
 | `npm run typecheck` | Run the TypeScript compiler without emitting files |
 | `npm run lint` | Run ESLint on `src/` |
 
