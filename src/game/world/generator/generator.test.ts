@@ -22,9 +22,7 @@ function mockBitmap() {
   return {
     image: {} as HTMLImageElement,
     width: 1,
-    height: 1,
-    pixelData: null,
-    pixelBytes: null
+    height: 1
   };
 }
 

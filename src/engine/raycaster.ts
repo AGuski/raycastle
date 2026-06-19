@@ -28,7 +28,8 @@ export function cast(
     distance: 0,
     length2: 0,
     shading: 0,
-    offset: 0
+    offset: 0,
+    verticalHit: false
   };
   steps.push(current);
 
@@ -67,17 +68,19 @@ export function cast(
       distance: distance + Math.sqrt(gridStep.length2),
       length2: gridStep.length2,
       shading: shiftX ? (cos < 0 ? 2 : 0) : sin < 0 ? 2 : 1,
-      offset: offset - Math.floor(offset)
+      offset: offset - Math.floor(offset),
+      verticalHit: false
     };
   };
 
   while (current.distance <= range) {
     const stepX = step(sin, cos, current.x, current.y);
     const stepY = step(cos, sin, current.y, current.x, true);
-    const nextStep =
-      stepX.length2 < stepY.length2
-        ? inspect(stepX, 1, 0, current.distance, stepX.y)
-        : inspect(stepY, 0, 1, current.distance, stepY.x);
+    const hitVertical = stepX.length2 < stepY.length2;
+    const nextStep = hitVertical
+      ? inspect(stepX, 1, 0, current.distance, stepX.y)
+      : inspect(stepY, 0, 1, current.distance, stepY.x);
+    nextStep.verticalHit = hitVertical;
 
     if (nextStep.distance > range) break;
 

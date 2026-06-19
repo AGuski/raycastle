@@ -19,6 +19,7 @@ export const CONFIG = {
   animationFps: 8,
   fogStart: 2,
   fogEnd: 12,
+  fogColor: [0, 0, 0] as const,
   world: {
     infinityMode: true,
     /** Chunk coords included when infinityMode is false (inclusive). */

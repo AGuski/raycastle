@@ -27,6 +27,8 @@ export interface RayStep {
   length2: number;
   shading: number;
   offset: number;
+  /** True when the ray crossed a vertical grid line (east/west face). */
+  verticalHit: boolean;
 }
 
 export interface WallProjection {
