@@ -14,6 +14,7 @@ export const CONFIG = {
   renderRange: IS_MOBILE ? 8 : 30,
   canvasScale: 0.5,
   weaponScaleDivisor: 1200,
+  fixedTimestep: 1 / 60,
   maxFrameDelta: 0.2,
   debugKey: 'F3',
   wallFillProbability: 0.3,

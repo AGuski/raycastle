@@ -53,10 +53,14 @@ async function main(): Promise<void> {
   world.randomize();
   world.addSprite(new Sprite(lampstand, lampstandSpawn.x, lampstandSpawn.y));
 
-  loop.start((seconds) => {
-    world.update(seconds);
-    player.update(input.states, world, seconds);
-    renderer.render(player, world);
+  loop.start({
+    update(dt) {
+      world.update(dt);
+      player.update(input.states, world, dt);
+    },
+    render() {
+      renderer.render(player, world);
+    }
   });
 }
 
