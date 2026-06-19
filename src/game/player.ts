@@ -1,7 +1,7 @@
 import { CONFIG, TAU } from '../core/config';
 import { ControlStates } from '../types';
 import { Bitmap } from './block';
-import { World } from './world';
+import { World } from './world/index';
 
 export class Player {
   readonly weapon: Bitmap;

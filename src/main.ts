@@ -7,7 +7,7 @@ import { GameLoop } from './engine/gameLoop';
 import { Renderer } from './engine/renderer';
 import { mountStatsOverlay } from './engine/statsOverlay';
 import { Player } from './game/player';
-import { World } from './game/world';
+import { World, loadLevelRecipe } from './game/world';
 import weaponKnifeImg from './assets/weapon_knife.png';
 
 function getCanvas(): HTMLCanvasElement {
@@ -20,34 +20,31 @@ function getCanvas(): HTMLCanvasElement {
 
 async function main(): Promise<void> {
   const assets = new AssetManager();
-  const { textures, playerStart, worldSize, focalLength, resolution, renderRange } =
-    CONFIG;
+  const { textures, focalLength, resolution, renderRange } = CONFIG;
+  const recipe = loadLevelRecipe();
 
   const weapon = assets.createBitmap(
     weaponKnifeImg,
     textures.weapon.width,
     textures.weapon.height
   );
-  const world = new World(worldSize, assets);
+  const world = new World(recipe, assets);
 
   await assets.preload([weapon, ...world.getBitmaps()]);
 
-  const player = new Player(
-    playerStart.x,
-    playerStart.y,
-    playerStart.direction,
-    weapon
-  );
+  const spawn = world.findSafeSpawn();
+  const player = new Player(spawn.x, spawn.y, spawn.direction, weapon);
+  world.ensureAround(player.x, player.y);
+
   const input = new Input();
   const renderer = new Renderer(getCanvas(), resolution, renderRange, focalLength);
   const stats = mountStatsOverlay();
   const loop = new GameLoop(stats);
 
-  world.randomize();
-
   loop.start({
     update(dt) {
-      world.update(dt);
+      world.ensureAround(player.x, player.y);
+      world.update(dt, player.x, player.y);
       player.update(input.states, world, dt);
     },
     render() {
