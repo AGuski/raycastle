@@ -1,5 +1,7 @@
 export class Bitmap {
   readonly image: HTMLImageElement;
+  pixelData: Uint32Array | null = null;
+  pixelBytes: Uint8ClampedArray | null = null;
 
   constructor(src: string, public width: number, public height: number) {
     this.image = new Image();

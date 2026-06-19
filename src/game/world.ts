@@ -15,11 +15,13 @@ import wallPaintingImg from '../assets/wall_stone_wood_painting_1_large.png';
 import wallControlsImg from '../assets/wall_stone_wood_controls_large.png';
 import skyboxImg from '../assets/skybox.png';
 import lampstandImg from '../assets/lampstand_1_large.png';
+import floorWoodImg from '../assets/floor_wood_1.png';
 
 export class World {
   private wallGrid: MapCell[];
   public readonly sprites: Sprite[] = [];
   public readonly skybox: Bitmap;
+  public readonly floorTexture: Bitmap;
   public light: number;
   public deltaTime = 0;
 
@@ -80,6 +82,11 @@ export class World {
       textures.lampstand.width,
       textures.lampstand.height
     );
+    this.floorTexture = assets.createBitmap(
+      floorWoodImg,
+      textures.floorWood.width,
+      textures.floorWood.height
+    );
     this.light = 0;
   }
 
@@ -88,6 +95,7 @@ export class World {
       this.wallImage,
       this.skybox,
       this.lampstand,
+      this.floorTexture,
       ...this.paintings.map((p) => p.texture).filter((t): t is Bitmap => !!t)
     ];
   }

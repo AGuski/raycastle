@@ -21,6 +21,12 @@ export class Renderer {
   private scale = 0;
   private focalLength: number;
   private readonly zBuffer: Float32Array;
+  private readonly rayCache: RayStep[][];
+  private readonly floorCanvas: HTMLCanvasElement;
+  private floorCtx: CanvasRenderingContext2D;
+  private floorImageData: ImageData;
+  private floorBuffer: Uint8ClampedArray;
+  private floorRowStride = 0;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -36,6 +42,17 @@ export class Renderer {
     this.ctx.imageSmoothingEnabled = false;
     this.focalLength = focalLength;
     this.zBuffer = new Float32Array(resolution);
+    this.rayCache = Array.from({ length: resolution }, () => []);
+    this.floorCanvas = document.createElement('canvas');
+    const floorCtx = this.floorCanvas.getContext('2d');
+    if (!floorCtx) {
+      throw new Error('Canvas 2D context is not available');
+    }
+    this.floorCtx = floorCtx;
+    this.floorCtx.imageSmoothingEnabled = false;
+    this.floorImageData = new ImageData(resolution, 1);
+    this.floorBuffer = this.floorImageData.data;
+    this.floorRowStride = resolution * 4;
     this.resize();
     window.addEventListener('resize', this.onResize);
   }
@@ -45,10 +62,17 @@ export class Renderer {
   };
 
   private resize(): void {
-    this.width = this.canvas.width = window.innerWidth * CONFIG.canvasScale;
-    this.height = this.canvas.height = window.innerHeight * CONFIG.canvasScale;
+    this.width = Math.floor(window.innerWidth * CONFIG.canvasScale);
+    this.canvas.width = this.width;
+    this.height = Math.floor(window.innerHeight * CONFIG.canvasScale);
+    this.canvas.height = this.height;
     this.spacing = this.width / this.resolution;
     this.scale = (this.width + this.height) / CONFIG.weaponScaleDivisor;
+    this.floorCanvas.width = this.resolution;
+    this.floorCanvas.height = this.height;
+    this.floorRowStride = this.resolution * 4;
+    this.floorImageData = new ImageData(this.resolution, this.height);
+    this.floorBuffer = this.floorImageData.data;
   }
 
   render(player: Player, map: World): void {
@@ -59,43 +83,174 @@ export class Renderer {
   }
 
   private drawSky(_direction: number, _sky: Bitmap, _ambient: number): void {
-    const skyHeight = this.height * 0.5;
+    this.ctx.fillStyle = '#000000';
+    this.ctx.fillRect(0, 0, this.width, this.height);
+  }
+
+  private drawColumns(player: Player, map: World): void {
+    const floorTex = map.floorTexture.pixelBytes;
+    if (!floorTex) {
+      throw new Error('Floor texture pixel data is not loaded');
+    }
+
+    this.zBuffer.fill(Infinity);
+    this.floorBuffer.fill(0);
+
+    const halfHeight = this.height * 0.5;
+    const texW = map.floorTexture.width;
+    const texH = map.floorTexture.height;
+    const maxZ = this.renderRange;
+    const dir = player.direction;
+    const focal = this.focalLength;
+    const res = this.resolution;
+    const px = player.x;
+    const py = player.y;
+
+    for (let column = 0; column < res; column++) {
+      const camX = column / res - 0.5;
+      const angle = Math.atan2(camX, focal);
+      const ray = cast(map, player, dir + angle, this.renderRange);
+      this.rayCache[column] = ray;
+
+      let hit = -1;
+      while (++hit < ray.length && isOpenCell(ray[hit].block));
+
+      if (hit < ray.length) {
+        this.zBuffer[column] = this.perpDistance(ray[hit].distance, angle);
+      } else if (ray.length > 0) {
+        this.zBuffer[column] = this.perpDistance(
+          ray[ray.length - 1].distance,
+          angle
+        );
+      }
+    }
+
+    this.fillFloorCeiling(
+      floorTex,
+      texW,
+      texH,
+      halfHeight,
+      maxZ,
+      focal,
+      dir,
+      px,
+      py
+    );
+
+    this.blitFloor();
 
     this.ctx.save();
-    this.ctx.fillStyle = '#1a120a';
-    this.ctx.fillRect(0, 0, this.width, skyHeight);
+    for (let column = 0; column < res; column++) {
+      const camX = column / res - 0.5;
+      const angle = Math.atan2(camX, focal);
+      const ray = this.rayCache[column];
+      let hit = -1;
+      while (++hit < ray.length && isOpenCell(ray[hit].block));
+      this.drawColumnWalls(column, ray, angle, hit, map, player);
+    }
+    this.ctx.restore();
+  }
 
-    // Skybox disabled for now — re-enable when ready:
-    // const width = sky.width * (this.height / sky.height) * 2;
-    // const left = (direction / TAU) * -width;
-    // this.ctx.drawImage(sky.image, left, 0, width, skyHeight);
-    // if (left < width - this.width) {
-    //   this.ctx.drawImage(sky.image, left + width, 0, width, skyHeight);
-    // }
+  private blitFloor(): void {
+    this.floorCtx.putImageData(this.floorImageData, 0, 0);
 
-    this.ctx.fillStyle = '#654321';
-    this.ctx.fillRect(0, skyHeight, this.width, this.height - skyHeight);
+    const res = this.resolution;
+    const h = this.height;
+    this.ctx.save();
+    this.ctx.globalAlpha = 1;
+    this.ctx.imageSmoothingEnabled = false;
 
-    // Ambient lighting overlay disabled for now:
-    // if (ambient > 0) {
-    //   this.ctx.fillStyle = '#ffffff';
-    //   this.ctx.globalAlpha = ambient * 0.1;
-    //   this.ctx.fillRect(0, skyHeight, this.width, this.height - skyHeight);
-    // }
+    for (let column = 0; column < res; column++) {
+      const left = Math.floor(column * this.spacing);
+      const width = Math.ceil(this.spacing);
+      this.ctx.drawImage(
+        this.floorCanvas,
+        column,
+        0,
+        1,
+        h,
+        left,
+        0,
+        width,
+        h
+      );
+    }
 
     this.ctx.restore();
   }
 
-  private drawColumns(player: Player, map: World): void {
-    this.zBuffer.fill(Infinity);
-    this.ctx.save();
-    for (let column = 0; column < this.resolution; column++) {
-      const x = column / this.resolution - 0.5;
-      const angle = Math.atan2(x, this.focalLength);
-      const ray = cast(map, player, player.direction + angle, this.renderRange);
-      this.drawColumn(column, ray, angle, map, player);
+  private fillFloorCeiling(
+    floorTex: Uint8ClampedArray,
+    texW: number,
+    texH: number,
+    halfHeight: number,
+    maxZ: number,
+    focal: number,
+    dir: number,
+    px: number,
+    py: number
+  ): void {
+    const data = this.floorBuffer;
+    const res = this.resolution;
+    const rowStride = this.floorRowStride;
+
+    for (let column = 0; column < res; column++) {
+      const camX = column / res - 0.5;
+      const angle = Math.atan2(camX, focal);
+      const cosAngle = Math.cos(angle);
+      if (Math.abs(cosAngle) < 0.001) continue;
+
+      const cosRay = Math.cos(dir + angle);
+      const sinRay = Math.sin(dir + angle);
+      const invCos = 1 / cosAngle;
+      const zLimit = this.zBuffer[column];
+
+      for (let y = this.height - 1; y > halfHeight; y--) {
+        const z = halfHeight / (y - halfHeight);
+        if (z > maxZ || z >= zLimit) break;
+
+        const worldX = px + z * cosRay * invCos;
+        const worldY = py + z * sinRay * invCos;
+        const texX = Math.min(
+          texW - 1,
+          Math.max(0, (worldX - Math.floor(worldX)) * texW | 0)
+        );
+        const texY = Math.min(
+          texH - 1,
+          Math.max(0, (worldY - Math.floor(worldY)) * texH | 0)
+        );
+        const src = (texY * texW + texX) << 2;
+        const dst = y * rowStride + column * 4;
+
+        data[dst] = floorTex[src];
+        data[dst + 1] = floorTex[src + 1];
+        data[dst + 2] = floorTex[src + 2];
+        data[dst + 3] = 255;
+      }
+
+      for (let y = 0; y < halfHeight; y++) {
+        const z = halfHeight / (halfHeight - y);
+        if (z > maxZ || z >= zLimit) break;
+
+        const worldX = px + z * cosRay * invCos;
+        const worldY = py + z * sinRay * invCos;
+        const texX = Math.min(
+          texW - 1,
+          Math.max(0, (worldX - Math.floor(worldX)) * texW | 0)
+        );
+        const texY = Math.min(
+          texH - 1,
+          Math.max(0, (worldY - Math.floor(worldY)) * texH | 0)
+        );
+        const src = (texY * texW + texX) << 2;
+        const dst = y * rowStride + column * 4;
+
+        data[dst] = floorTex[src];
+        data[dst + 1] = floorTex[src + 1];
+        data[dst + 2] = floorTex[src + 2];
+        data[dst + 3] = 255;
+      }
     }
-    this.ctx.restore();
   }
 
   private drawSprites(player: Player, map: World): void {
@@ -191,28 +346,17 @@ export class Renderer {
     );
   }
 
-  private drawColumn(
+  private drawColumnWalls(
     column: number,
     ray: RayStep[],
     angle: number,
+    hit: number,
     map: World,
     player: Player
   ): void {
     const ctx = this.ctx;
     const left = Math.floor(column * this.spacing);
     const width = Math.ceil(this.spacing);
-    let hit = -1;
-
-    while (++hit < ray.length && isOpenCell(ray[hit].block));
-
-    if (hit < ray.length) {
-      this.zBuffer[column] = this.perpDistance(ray[hit].distance, angle);
-    } else if (ray.length > 0) {
-      this.zBuffer[column] = this.perpDistance(
-        ray[ray.length - 1].distance,
-        angle
-      );
-    }
 
     for (let s = ray.length - 1; s >= 0; s--) {
       const step = ray[s];

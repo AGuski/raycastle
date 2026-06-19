@@ -29,6 +29,7 @@ export const CONFIG = {
     wallControls: { width: 1024, height: 1024 },
     skybox: { width: 4096, height: 1024 },
     weapon: { width: 1200, height: 950 },
-    lampstand: { width: 1024, height: 1024 }
+    lampstand: { width: 1024, height: 1024 },
+    floorWood: { width: 1024, height: 1024 }
   }
 } as const;
