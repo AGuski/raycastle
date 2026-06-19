@@ -1,4 +1,3 @@
-import { Sprite } from '../game/entities/sprite';
 import {
   GridStep,
   MAP_EMPTY,
@@ -9,7 +8,6 @@ import {
 
 export interface RaycastWorld {
   getBlock(x: number, y: number): MapCell;
-  getSprite(x: number, y: number): Sprite | undefined;
 }
 
 export function cast(
@@ -62,8 +60,7 @@ export function cast(
     const dy = sin < 0 ? shiftY : 0;
     const cellX = gridStep.x - dx;
     const cellY = gridStep.y - dy;
-    const sprite = world.getSprite(cellX, cellY);
-    const rayStep: RayStep = {
+    return {
       x: gridStep.x,
       y: gridStep.y,
       block: world.getBlock(cellX, cellY),
@@ -72,10 +69,6 @@ export function cast(
       shading: shiftX ? (cos < 0 ? 2 : 0) : sin < 0 ? 2 : 1,
       offset: offset - Math.floor(offset)
     };
-    if (sprite) {
-      rayStep.sprite = sprite;
-    }
-    return rayStep;
   };
 
   while (current.distance <= range) {

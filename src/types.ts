@@ -1,5 +1,4 @@
 import { Block } from './game/block';
-import { Sprite } from './game/entities/sprite';
 
 export type ControlState = 'left' | 'right' | 'forward' | 'backward';
 
@@ -28,7 +27,6 @@ export interface RayStep {
   length2: number;
   shading: number;
   offset: number;
-  sprite?: Sprite;
 }
 
 export interface WallProjection {

@@ -6,10 +6,8 @@ import { AssetManager } from './engine/assets';
 import { GameLoop } from './engine/gameLoop';
 import { Renderer } from './engine/renderer';
 import { mountStatsOverlay } from './engine/statsOverlay';
-import { Sprite } from './game/entities/sprite';
 import { Player } from './game/player';
 import { World } from './game/world';
-import lampstandImg from './assets/lampstand_1_large.png';
 import weaponKnifeImg from './assets/weapon_knife.png';
 
 function getCanvas(): HTMLCanvasElement {
@@ -22,7 +20,7 @@ function getCanvas(): HTMLCanvasElement {
 
 async function main(): Promise<void> {
   const assets = new AssetManager();
-  const { textures, playerStart, lampstandSpawn, worldSize, focalLength, resolution, renderRange } =
+  const { textures, playerStart, worldSize, focalLength, resolution, renderRange } =
     CONFIG;
 
   const weapon = assets.createBitmap(
@@ -31,13 +29,8 @@ async function main(): Promise<void> {
     textures.weapon.height
   );
   const world = new World(worldSize, assets);
-  const lampstand = assets.createBitmap(
-    lampstandImg,
-    textures.lampstand.width,
-    textures.lampstand.height
-  );
 
-  await assets.preload([weapon, lampstand, ...world.getBitmaps()]);
+  await assets.preload([weapon, ...world.getBitmaps()]);
 
   const player = new Player(
     playerStart.x,
@@ -51,7 +44,6 @@ async function main(): Promise<void> {
   const loop = new GameLoop(stats);
 
   world.randomize();
-  world.addSprite(new Sprite(lampstand, lampstandSpawn.x, lampstandSpawn.y));
 
   loop.start({
     update(dt) {

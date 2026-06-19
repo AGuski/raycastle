@@ -18,6 +18,8 @@ export const CONFIG = {
   maxFrameDelta: 0.2,
   debugKey: 'F3',
   wallFillProbability: 0.3,
+  lampSpawnProbability: 0.08,
+  lampPlayerClearRadius: 2,
   animationFps: 8,
   textures: {
     wallBooks: { width: 1024, height: 1024 },
@@ -28,6 +30,5 @@ export const CONFIG = {
     skybox: { width: 4096, height: 1024 },
     weapon: { width: 1200, height: 950 },
     lampstand: { width: 1024, height: 1024 }
-  },
-  lampstandSpawn: { x: 15, y: -3 }
+  }
 } as const;

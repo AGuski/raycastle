@@ -1,6 +1,7 @@
 import { CONFIG } from '../core/config';
 import { isDebugEnabled } from '../core/debug';
 import { Bitmap, WallDirection } from '../game/block';
+import { Sprite } from '../game/entities/sprite';
 import { Player } from '../game/player';
 import { World } from '../game/world';
 import { cast } from './raycaster';
@@ -19,6 +20,7 @@ export class Renderer {
   private spacing = 0;
   private scale = 0;
   private focalLength: number;
+  private readonly zBuffer: Float32Array;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -33,6 +35,7 @@ export class Renderer {
     this.ctx = ctx;
     this.ctx.imageSmoothingEnabled = false;
     this.focalLength = focalLength;
+    this.zBuffer = new Float32Array(resolution);
     this.resize();
     window.addEventListener('resize', this.onResize);
   }
@@ -51,6 +54,7 @@ export class Renderer {
   render(player: Player, map: World): void {
     this.drawSky(player.direction, map.skybox, map.light);
     this.drawColumns(player, map);
+    this.drawSprites(player, map);
     this.drawWeapon(player.weapon, player.paces);
   }
 
@@ -83,6 +87,7 @@ export class Renderer {
   }
 
   private drawColumns(player: Player, map: World): void {
+    this.zBuffer.fill(Infinity);
     this.ctx.save();
     for (let column = 0; column < this.resolution; column++) {
       const x = column / this.resolution - 0.5;
@@ -91,6 +96,85 @@ export class Renderer {
       this.drawColumn(column, ray, angle, map, player);
     }
     this.ctx.restore();
+  }
+
+  private drawSprites(player: Player, map: World): void {
+    const ctx = this.ctx;
+    const cosDir = Math.cos(player.direction);
+    const sinDir = Math.sin(player.direction);
+    const maxDistSq = this.renderRange * this.renderRange;
+
+    const sorted = map.sprites.slice().sort((a, b) => {
+      const da = (a.x - player.x) ** 2 + (a.y - player.y) ** 2;
+      const db = (b.x - player.x) ** 2 + (b.y - player.y) ** 2;
+      return db - da;
+    });
+
+    ctx.save();
+    ctx.globalAlpha = 1;
+
+    for (const sprite of sorted) {
+      this.drawSprite(sprite, player, cosDir, sinDir, maxDistSq);
+    }
+
+    ctx.restore();
+  }
+
+  private drawSprite(
+    sprite: Sprite,
+    player: Player,
+    cosDir: number,
+    sinDir: number,
+    maxDistSq: number
+  ): void {
+    const dx = sprite.x - player.x;
+    const dy = sprite.y - player.y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > maxDistSq) return;
+
+    const transformY = dx * cosDir + dy * sinDir;
+    if (transformY <= 0.1) return;
+
+    const transformX = -dx * sinDir + dy * cosDir;
+    const invDepth = 1 / transformY;
+    const spriteHeight = Math.abs(Math.floor(this.height * invDepth));
+    const spriteWidth = Math.abs(
+      Math.floor(spriteHeight * (sprite.texture.width / sprite.texture.height))
+    );
+    if (spriteWidth <= 0 || spriteHeight <= 0) return;
+
+    const screenX =
+      (transformX * invDepth * this.focalLength + 0.5) * this.resolution;
+    const spriteTop = Math.floor(this.height / 2 - spriteHeight / 2);
+    const startColumn = Math.max(0, Math.floor(screenX - spriteWidth / 2));
+    const endColumn = Math.min(
+      this.resolution,
+      Math.ceil(screenX + spriteWidth / 2)
+    );
+
+    for (let column = startColumn; column < endColumn; column++) {
+      if (transformY >= this.zBuffer[column]) continue;
+
+      const stripe = column - (screenX - spriteWidth / 2);
+      const textureX = Math.min(
+        sprite.texture.width - 1,
+        Math.max(0, Math.floor((stripe / spriteWidth) * sprite.texture.width))
+      );
+      const left = Math.floor(column * this.spacing);
+      const width = Math.ceil(this.spacing);
+
+      this.ctx.drawImage(
+        sprite.texture.image,
+        textureX,
+        0,
+        1,
+        sprite.texture.height,
+        left,
+        spriteTop,
+        width,
+        spriteHeight
+      );
+    }
   }
 
   private drawWeapon(weapon: Bitmap, paces: number): void {
@@ -120,6 +204,15 @@ export class Renderer {
     let hit = -1;
 
     while (++hit < ray.length && isOpenCell(ray[hit].block));
+
+    if (hit < ray.length) {
+      this.zBuffer[column] = this.perpDistance(ray[hit].distance, angle);
+    } else if (ray.length > 0) {
+      this.zBuffer[column] = this.perpDistance(
+        ray[ray.length - 1].distance,
+        angle
+      );
+    }
 
     for (let s = ray.length - 1; s >= 0; s--) {
       const step = ray[s];
@@ -195,32 +288,17 @@ export class Renderer {
         // ctx.fillRect(left, wall.top, width, wall.height);
       }
 
-      if (step.sprite) {
-        const sprite = step.sprite;
-        const wall = this.project(1, angle, step.distance);
-        const textureX = Math.floor(sprite.texture.width * step.offset);
-
-        ctx.globalAlpha = 1;
-        ctx.drawImage(
-          sprite.texture.image,
-          textureX,
-          0,
-          1,
-          sprite.texture.image.height,
-          left,
-          wall.top,
-          width,
-          wall.height
-        );
-      }
-
       ctx.fillStyle = '#ffffff';
       ctx.globalAlpha = 0.15;
     }
   }
 
+  private perpDistance(distance: number, angle: number): number {
+    return distance * Math.cos(angle);
+  }
+
   private project(height: number, angle: number, distance: number): WallProjection {
-    const z = distance * Math.cos(angle);
+    const z = this.perpDistance(distance, angle);
     const wallHeight = (this.height * height) / z;
     const bottom = (this.height / 2) * (1 + 1 / z);
     return {

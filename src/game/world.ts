@@ -14,16 +14,17 @@ import wallNofireImg from '../assets/wall_stone_wood_nofire_1_large.png';
 import wallPaintingImg from '../assets/wall_stone_wood_painting_1_large.png';
 import wallControlsImg from '../assets/wall_stone_wood_controls_large.png';
 import skyboxImg from '../assets/skybox.png';
+import lampstandImg from '../assets/lampstand_1_large.png';
 
 export class World {
   private wallGrid: MapCell[];
   public readonly sprites: Sprite[] = [];
-  private readonly spriteIndex = new Map<number, Sprite>();
   public readonly skybox: Bitmap;
   public light: number;
   public deltaTime = 0;
 
   readonly wallImage: Bitmap;
+  private readonly lampstand: Bitmap;
 
   private readonly paintings: BlockSide[];
 
@@ -74,6 +75,11 @@ export class World {
       textures.skybox.width,
       textures.skybox.height
     );
+    this.lampstand = assets.createBitmap(
+      lampstandImg,
+      textures.lampstand.width,
+      textures.lampstand.height
+    );
     this.light = 0;
   }
 
@@ -81,13 +87,13 @@ export class World {
     return [
       this.wallImage,
       this.skybox,
+      this.lampstand,
       ...this.paintings.map((p) => p.texture).filter((t): t is Bitmap => !!t)
     ];
   }
 
   addSprite(sprite: Sprite): void {
     this.sprites.push(sprite);
-    this.indexSprite(sprite);
   }
 
   isOpen(x: number, y: number): boolean {
@@ -101,18 +107,6 @@ export class World {
       return MAP_OUT_OF_BOUNDS;
     }
     return this.wallGrid[y * this.size + x];
-  }
-
-  getSprite(x: number, y: number): Sprite | undefined {
-    return this.spriteIndex.get(this.cellKey(Math.floor(x), Math.floor(y)));
-  }
-
-  private cellKey(x: number, y: number): number {
-    return y * this.size + x;
-  }
-
-  private indexSprite(sprite: Sprite): void {
-    this.spriteIndex.set(this.cellKey(sprite.x, sprite.y), sprite);
   }
 
   private getBlockWithImageOnRandomSide(): Block {
@@ -130,11 +124,35 @@ export class World {
   }
 
   randomize(): void {
+    this.sprites.length = 0;
+
     for (let i = 0; i < this.size * this.size; i++) {
       this.wallGrid[i] =
         Math.random() < CONFIG.wallFillProbability
           ? this.getBlockWithImageOnRandomSide()
           : MAP_EMPTY;
+    }
+
+    this.scatterLamps();
+  }
+
+  private scatterLamps(): void {
+    const { lampSpawnProbability, lampPlayerClearRadius, playerStart } = CONFIG;
+    const clearRadiusSq = lampPlayerClearRadius * lampPlayerClearRadius;
+
+    for (let y = 0; y < this.size; y++) {
+      for (let x = 0; x < this.size; x++) {
+        if (!isOpenCell(this.wallGrid[y * this.size + x])) continue;
+        if (Math.random() >= lampSpawnProbability) continue;
+
+        const wx = x + 0.5;
+        const wy = y + 0.5;
+        const dx = wx - playerStart.x;
+        const dy = wy - playerStart.y;
+        if (dx * dx + dy * dy < clearRadiusSq) continue;
+
+        this.addSprite(new Sprite(this.lampstand, wx, wy));
+      }
     }
   }
 
