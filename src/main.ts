@@ -36,8 +36,9 @@ async function main(): Promise<void> {
   const player = new Player(spawn.x, spawn.y, spawn.direction, weapon);
   world.ensureAround(player.x, player.y, { x: player.x, y: player.y });
 
-  const input = new Input();
-  const renderer = new Renderer(getCanvas(), resolution, renderRange, focalLength);
+  const canvas = getCanvas();
+  const input = new Input(canvas);
+  const renderer = new Renderer(canvas, resolution, renderRange, focalLength);
   const stats = mountStatsOverlay();
   const loop = new GameLoop(stats);
 
@@ -45,7 +46,7 @@ async function main(): Promise<void> {
     update(dt) {
       world.ensureAround(player.x, player.y);
       world.update(dt, player.x, player.y);
-      player.update(input.states, world, dt);
+      player.update(input.states, world, dt, input.consumeTurnDelta());
     },
     render() {
       renderer.render(player, world);

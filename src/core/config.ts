@@ -7,7 +7,8 @@ export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(
 export const CONFIG = {
   playerStart: { x: 0.5, y: 0.5, direction: Math.PI * 0.3 },
   walkSpeed: 3,
-  turnSpeed: Math.PI,
+  /** Radians turned per pixel of horizontal mouse or touch drag. */
+  lookSensitivity: 0.0025,
   focalLength: 0.6,
   resolution: IS_MOBILE ? 160 : 640,
   renderRange: IS_MOBILE ? 8 : 30,

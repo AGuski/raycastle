@@ -24,18 +24,38 @@ export class Player {
     this.direction = (this.direction + angle + TAU) % TAU;
   }
 
-  walk(distance: number, map: World): void {
-    const dx = Math.cos(this.direction) * distance;
-    const dy = Math.sin(this.direction) * distance;
+  private move(dx: number, dy: number, map: World): void {
+    if (dx === 0 && dy === 0) return;
     if (map.isOpen(this.x + dx, this.y)) this.x += dx;
     if (map.isOpen(this.x, this.y + dy)) this.y += dy;
-    this._paces += distance;
+    this._paces += Math.hypot(dx, dy);
   }
 
-  update(controls: ControlStates, map: World, seconds: number): void {
-    if (controls.left) this.rotate(-CONFIG.turnSpeed * seconds);
-    if (controls.right) this.rotate(CONFIG.turnSpeed * seconds);
-    if (controls.forward) this.walk(CONFIG.walkSpeed * seconds, map);
-    if (controls.backward) this.walk(-CONFIG.walkSpeed * seconds, map);
+  update(
+    controls: ControlStates,
+    map: World,
+    seconds: number,
+    turnDelta = 0
+  ): void {
+    if (turnDelta !== 0) this.rotate(turnDelta);
+
+    let forward = 0;
+    if (controls.forward) forward += 1;
+    if (controls.backward) forward -= 1;
+
+    let strafe = 0;
+    if (controls.right) strafe += 1;
+    if (controls.left) strafe -= 1;
+
+    const len = Math.hypot(forward, strafe);
+    if (len === 0) return;
+
+    forward /= len;
+    strafe /= len;
+
+    const distance = CONFIG.walkSpeed * seconds;
+    const cos = Math.cos(this.direction);
+    const sin = Math.sin(this.direction);
+    this.move((cos * forward - sin * strafe) * distance, (sin * forward + cos * strafe) * distance, map);
   }
 }
