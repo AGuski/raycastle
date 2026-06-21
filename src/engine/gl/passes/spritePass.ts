@@ -54,13 +54,6 @@ export class SpritePass implements RenderPass {
     const strips = this.collectSprites(ctx, ctx.player, ctx.world);
     if (strips.length === 0) return;
 
-    const groups = new Map<WebGLTexture, SpriteStrip[]>();
-    for (const strip of strips) {
-      const list = groups.get(strip.texture.handle) ?? [];
-      list.push(strip);
-      groups.set(strip.texture.handle, list);
-    }
-
     program.use();
     gl.uniform2f(program.uniform('uResolution'), ctx.width, ctx.height);
     gl.uniform1f(program.uniform('uSpacing'), ctx.spacing);
@@ -78,27 +71,32 @@ export class SpritePass implements RenderPass {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    for (const groupStrips of groups.values()) {
+    let index = 0;
+    while (index < strips.length) {
+      const texture = strips[index].texture;
       batch.clear();
-      for (const strip of groupStrips) {
-          batch.pushColumnStrip(
-            strip.left,
-            strip.top,
-            strip.width,
-            strip.height,
-            strip.texColumn,
-            strip.depth
-          );
+      while (index < strips.length && strips[index].texture.handle === texture.handle) {
+        const strip = strips[index];
+        batch.pushColumnStrip(
+          strip.left,
+          strip.top,
+          strip.width,
+          strip.height,
+          strip.texColumn,
+          strip.depth
+        );
+        index++;
       }
+
       batch.upload();
       batch.bind();
 
-      groupStrips[0].texture.bind(0);
+      texture.bind(0);
       gl.uniform1i(program.uniform('uTexture'), 0);
       gl.uniform2i(
         program.uniform('uTexSize'),
-        groupStrips[0].texture.width,
-        groupStrips[0].texture.height
+        texture.width,
+        texture.height
       );
 
       batch.draw();
@@ -118,16 +116,13 @@ export class SpritePass implements RenderPass {
     const sinDir = Math.sin(player.direction);
     const maxDistSq = ctx.renderRange * ctx.renderRange;
 
-    const sorted = world.sprites.slice().sort((a, b) => {
-      const da = (a.x - player.x) ** 2 + (a.y - player.y) ** 2;
-      const db = (b.x - player.x) ** 2 + (b.y - player.y) ** 2;
-      return db - da;
-    });
-
-    for (const sprite of sorted) {
-      strips.push(...this.spriteStrips(sprite, player, cosDir, sinDir, maxDistSq, ctx));
+    for (const sprite of world.sprites) {
+      strips.push(
+        ...this.spriteStrips(sprite, player, cosDir, sinDir, maxDistSq, ctx, world)
+      );
     }
 
+    strips.sort((a, b) => b.depth - a.depth);
     return strips;
   }
 
@@ -137,7 +132,8 @@ export class SpritePass implements RenderPass {
     cosDir: number,
     sinDir: number,
     maxDistSq: number,
-    ctx: FrameContext
+    ctx: FrameContext,
+    world: World
   ): SpriteStrip[] {
     const dx = sprite.x - player.x;
     const dy = sprite.y - player.y;
@@ -151,7 +147,7 @@ export class SpritePass implements RenderPass {
     const invDepth = 1 / transformY;
     const spriteHeight = Math.abs(Math.floor(ctx.height * invDepth));
     const spriteWidth = Math.abs(
-      Math.floor(spriteHeight * (sprite.texture.width / sprite.texture.height))
+      Math.floor(spriteHeight * sprite.texture.aspectRatio)
     );
     if (spriteWidth <= 0 || spriteHeight <= 0) return [];
 
@@ -160,7 +156,9 @@ export class SpritePass implements RenderPass {
     const spriteTop = Math.floor(ctx.height / 2 - spriteHeight / 2);
     const startColumn = Math.max(0, Math.floor(screenX - spriteWidth / 2));
     const endColumn = Math.min(ctx.columns, Math.ceil(screenX + spriteWidth / 2));
-    const tex = getBitmapTexture(ctx.gl, sprite.texture);
+    const sheet = sprite.texture;
+    const tex = getBitmapTexture(ctx.gl, sheet.bitmap);
+    const animTime = sprite.animationTime ?? world.deltaTime;
     const strips: SpriteStrip[] = [];
 
     for (let column = startColumn; column < endColumn; column++) {
@@ -169,12 +167,11 @@ export class SpritePass implements RenderPass {
       const stripe = column - (screenX - spriteWidth / 2);
       const left = Math.floor(column * ctx.spacing);
       const width = Math.ceil(ctx.spacing);
-      const texColumn = Math.min(
-        tex.width - 1,
-        Math.max(
-          0,
-          Math.floor((stripe / spriteWidth) * tex.width)
-        )
+      const localColumn = (stripe / spriteWidth) * sheet.frameWidth;
+      const texColumn = sheet.frameColumn(
+        localColumn,
+        animTime,
+        CONFIG.animationFps
       );
 
       strips.push({

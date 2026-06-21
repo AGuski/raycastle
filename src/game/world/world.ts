@@ -2,6 +2,7 @@ import { CONFIG } from '../../core/config';
 import { AssetManager } from '../../engine/assets';
 import { Bitmap, Block, BlockSide, BlockSides } from '../block';
 import { Sprite } from '../entities/sprite';
+import { spriteSheet, SpriteSheet } from '../spriteSheet';
 import { isOpenCell, MapCell } from '../../types';
 import { ChunkManager } from './chunkManager';
 import { EntityManager } from './entityManager';
@@ -13,7 +14,7 @@ import wallPaintingImg from '../../assets/wall_stone_wood_painting_1_large.png';
 import wallControlsImg from '../../assets/wall_stone_wood_controls_large.png';
 import skyboxImg from '../../assets/skybox.png';
 import lampstandImg from '../../assets/lampstand_1_large.png';
-import zombieImg from '../../assets/test-zombie_1.png';
+import zombieImg from '../../assets/Zombie_Test_Sprite.png';
 import floorWoodImg from '../../assets/floor_wood_1.png';
 import ceilingWoodImg from '../../assets/wooden_panel_ceiling_1.png';
 
@@ -30,8 +31,9 @@ export class World {
   public deltaTime = 0;
 
   readonly wallImage: Bitmap;
-  private readonly lampstand: Bitmap;
-  private readonly zombie: Bitmap;
+  private readonly wallSheet: SpriteSheet;
+  private readonly lampstand: SpriteSheet;
+  private readonly zombie: SpriteSheet;
   private readonly paintings: BlockSide[];
   private readonly boundaryBlock: Block;
 
@@ -45,34 +47,43 @@ export class World {
       textures.wallBooks.width,
       textures.wallBooks.height
     );
+    this.wallSheet = spriteSheet(this.wallImage);
     this.paintings = [
       {
-        texture: assets.createBitmap(
-          wallFireAnimImg,
-          textures.wallFireAnim.width,
-          textures.wallFireAnim.height
-        ),
-        frames: textures.wallFireAnim.frames
-      },
-      {
-        texture: assets.createBitmap(
-          wallNofireImg,
-          textures.wallNofire.width,
-          textures.wallNofire.height
+        texture: spriteSheet(
+          assets.createBitmap(
+            wallFireAnimImg,
+            textures.wallFireAnim.width,
+            textures.wallFireAnim.height
+          ),
+          textures.wallFireAnim.frames
         )
       },
       {
-        texture: assets.createBitmap(
-          wallPaintingImg,
-          textures.wallPainting.width,
-          textures.wallPainting.height
+        texture: spriteSheet(
+          assets.createBitmap(
+            wallNofireImg,
+            textures.wallNofire.width,
+            textures.wallNofire.height
+          )
         )
       },
       {
-        texture: assets.createBitmap(
-          wallControlsImg,
-          textures.wallControls.width,
-          textures.wallControls.height
+        texture: spriteSheet(
+          assets.createBitmap(
+            wallPaintingImg,
+            textures.wallPainting.width,
+            textures.wallPainting.height
+          )
+        )
+      },
+      {
+        texture: spriteSheet(
+          assets.createBitmap(
+            wallControlsImg,
+            textures.wallControls.width,
+            textures.wallControls.height
+          )
         )
       }
     ];
@@ -81,15 +92,20 @@ export class World {
       textures.skybox.width,
       textures.skybox.height
     );
-    this.lampstand = assets.createBitmap(
-      lampstandImg,
-      textures.lampstand.width,
-      textures.lampstand.height
+    this.lampstand = spriteSheet(
+      assets.createBitmap(
+        lampstandImg,
+        textures.lampstand.width,
+        textures.lampstand.height
+      )
     );
-    this.zombie = assets.createBitmap(
-      zombieImg,
-      textures.zombie.width,
-      textures.zombie.height
+    this.zombie = spriteSheet(
+      assets.createBitmap(
+        zombieImg,
+        textures.zombie.width,
+        textures.zombie.height
+      ),
+      textures.zombie.frames
     );
     this.floorTexture = assets.createBitmap(
       floorWoodImg,
@@ -104,10 +120,10 @@ export class World {
     this.light = 0;
 
     const boundarySides: BlockSides = [
-      { texture: this.wallImage },
-      { texture: this.wallImage },
-      { texture: this.wallImage },
-      { texture: this.wallImage }
+      { texture: this.wallSheet },
+      { texture: this.wallSheet },
+      { texture: this.wallSheet },
+      { texture: this.wallSheet }
     ];
     this.boundaryBlock = new Block(boundarySides);
     this.entityManager = new EntityManager();
@@ -115,7 +131,7 @@ export class World {
     this.chunkManager = new ChunkManager(
       recipe,
       {
-        wallImage: this.wallImage,
+        wallImage: this.wallSheet,
         paintings: this.paintings,
         lampstand: this.lampstand,
         zombie: this.zombie
@@ -133,11 +149,13 @@ export class World {
     return [
       this.wallImage,
       this.skybox,
-      this.lampstand,
-      this.zombie,
+      this.lampstand.bitmap,
+      this.zombie.bitmap,
       this.floorTexture,
       this.ceilingTexture,
-      ...this.paintings.map((p) => p.texture).filter((t): t is Bitmap => !!t)
+      ...this.paintings
+        .map((p) => p.texture?.bitmap)
+        .filter((t): t is Bitmap => !!t)
     ];
   }
 

@@ -1,3 +1,5 @@
+import { SpriteSheet } from './spriteSheet';
+
 export class Bitmap {
   readonly image: HTMLImageElement;
 
@@ -8,9 +10,8 @@ export class Bitmap {
 }
 
 export interface BlockSide {
-  texture?: Bitmap;
+  texture?: SpriteSheet;
   color?: string;
-  frames?: number;
 }
 
 export type BlockSides = [BlockSide, BlockSide, BlockSide, BlockSide];

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Block, BlockSide } from '../block';
+import { spriteSheet } from '../spriteSheet';
 import { ChunkManager } from './chunkManager';
 import { EntityManager } from './entityManager';
 import { defaultGeneratorParams } from './levelRecipe';
@@ -15,7 +16,7 @@ function mockBitmap() {
 }
 
 function mockAssets() {
-  const w = mockBitmap();
+  const w = spriteSheet(mockBitmap());
   return {
     wallImage: w,
     paintings: [{ texture: w } as BlockSide],
@@ -25,7 +26,7 @@ function mockAssets() {
 }
 
 function mockBoundary() {
-  const t = mockBitmap();
+  const t = spriteSheet(mockBitmap());
   return new Block([
     { texture: t },
     { texture: t },

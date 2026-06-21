@@ -1,15 +1,16 @@
-import { Bitmap, Block, BlockSide, BlockSides } from '../../block';
+import { Block, BlockSide, BlockSides } from '../../block';
 import { ActorEntity, ActorEntityConfig } from '../../entities/actorEntity';
 import { StaticSprite } from '../../entities/sprite';
+import { SpriteSheet } from '../../spriteSheet';
 import { MAP_EMPTY, MapCell } from '../../../types';
 import { localIndex } from '../chunk';
 import { SeededRng } from './seededRng';
 
 export interface DecorationAssets {
-  wallImage: Bitmap;
+  wallImage: SpriteSheet;
   paintings: BlockSide[];
-  lampstand: Bitmap;
-  zombie: Bitmap;
+  lampstand: SpriteSheet;
+  zombie: SpriteSheet;
 }
 
 export function createDecoratedBlock(

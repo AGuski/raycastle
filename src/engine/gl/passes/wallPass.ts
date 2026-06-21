@@ -172,8 +172,8 @@ export class WallPass implements RenderPass {
       const width = Math.ceil(ctx.spacing);
 
       if (side.texture) {
-        const texture = getBitmapTexture(ctx.gl, side.texture);
-        const texColumn = this.wallTexColumn(side, step, world, texture.width);
+        const texture = getBitmapTexture(ctx.gl, side.texture.bitmap);
+        const texColumn = this.wallTexColumn(side, step, world);
         draws.push({
           left,
           top: wall.top,
@@ -215,19 +215,16 @@ export class WallPass implements RenderPass {
   private wallTexColumn(
     side: BlockSide,
     step: RayStep,
-    world: World,
-    texW: number
+    world: World
   ): number {
-    if (side.frames) {
-      const frameWidth = texW / side.frames;
-      const currentFrame = Math.floor(
-        (world.deltaTime * CONFIG.animationFps) % side.frames
-      );
-      const col =
-        Math.floor(frameWidth * step.offset) + currentFrame * frameWidth;
-      return Math.min(texW - 1, Math.max(0, col));
-    }
-    return Math.min(texW - 1, Math.max(0, Math.floor(texW * step.offset)));
+    if (!side.texture) return 0;
+
+    const localColumn = side.texture.frameWidth * step.offset;
+    return side.texture.frameColumn(
+      localColumn,
+      world.deltaTime,
+      CONFIG.animationFps
+    );
   }
 
   private wallDirection(step: RayStep, player: Player): WallDirection {

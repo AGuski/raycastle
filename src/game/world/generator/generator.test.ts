@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Block, BlockSide } from '../../block';
+import { spriteSheet } from '../../spriteSheet';
 import { ChunkManager } from '../chunkManager';
 import { EntityManager } from '../entityManager';
 import { localIndex } from '../chunk';
@@ -28,18 +29,18 @@ function mockBitmap() {
 }
 
 function mockDecorationAssets(): DecorationAssets {
-  const wallImage = mockBitmap();
+  const wallImage = spriteSheet(mockBitmap());
   const painting: BlockSide = { texture: wallImage };
   return {
     wallImage,
     paintings: [painting],
-    lampstand: mockBitmap(),
-    zombie: mockBitmap()
+    lampstand: spriteSheet(mockBitmap()),
+    zombie: spriteSheet(mockBitmap())
   };
 }
 
 function mockBoundaryBlock(): Block {
-  const texture = mockBitmap();
+  const texture = spriteSheet(mockBitmap());
   return new Block([
     { texture },
     { texture },

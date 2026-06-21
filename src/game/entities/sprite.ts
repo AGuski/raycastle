@@ -1,16 +1,18 @@
-import { Bitmap } from '../block';
+import { SpriteSheet } from '../spriteSheet';
 
 export interface Sprite {
-  texture: Bitmap;
+  texture: SpriteSheet;
   x: number;
   y: number;
+  /** Seconds of animation playback; defaults to world time when omitted. */
+  animationTime?: number;
 }
 
 export class StaticSprite implements Sprite {
   public timesHit = 0;
 
   constructor(
-    public texture: Bitmap,
+    public texture: SpriteSheet,
     public x: number,
     public y: number
   ) {}

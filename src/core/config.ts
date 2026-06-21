@@ -37,10 +37,11 @@ export const CONFIG = {
   },
   actors: {
     zombie: {
-      speed: 0.8,
+      speed: 0.65,
       sightRange: 18,
       proximityRadius: 1.5,
-      chaseOnSight: true
+      chaseOnSight: true,
+      animationSpeed: 0.7
     }
   },
   textures: {
@@ -52,7 +53,7 @@ export const CONFIG = {
     skybox: { width: 4096, height: 1024 },
     weapon: { width: 1200, height: 950 },
     lampstand: { width: 1024, height: 1024 },
-    zombie: { width: 1024, height: 1024 },
+    zombie: { width: 3072, height: 512, frames: 6 },
     floorWood: { width: 1024, height: 1024 },
     ceilingWood: { width: 1024, height: 1024 }
   }
