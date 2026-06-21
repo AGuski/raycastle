@@ -34,7 +34,7 @@ async function main(): Promise<void> {
 
   const spawn = world.findSafeSpawn();
   const player = new Player(spawn.x, spawn.y, spawn.direction, weapon);
-  world.ensureAround(player.x, player.y);
+  world.ensureAround(player.x, player.y, { x: player.x, y: player.y });
 
   const input = new Input();
   const renderer = new Renderer(getCanvas(), resolution, renderRange, focalLength);

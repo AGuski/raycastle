@@ -1,5 +1,5 @@
 import { MapCell } from '../../types';
-import { Sprite } from '../entities/sprite';
+import { StaticSprite } from '../entities/sprite';
 
 export interface ChunkCoord {
   cx: number;
@@ -42,6 +42,6 @@ export class Chunk {
     public readonly cx: number,
     public readonly cy: number,
     public readonly cells: MapCell[],
-    public readonly sprites: Sprite[]
+    public readonly sprites: StaticSprite[]
   ) {}
 }

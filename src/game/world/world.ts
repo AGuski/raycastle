@@ -4,6 +4,7 @@ import { Bitmap, Block, BlockSide, BlockSides } from '../block';
 import { Sprite } from '../entities/sprite';
 import { isOpenCell, MapCell } from '../../types';
 import { ChunkManager } from './chunkManager';
+import { EntityManager } from './entityManager';
 import { LevelRecipe, loadLevelRecipe } from './levelRecipe';
 import wallBooksImg from '../../assets/wall_stone_wood_books_large.png';
 import wallFireAnimImg from '../../assets/wall_stone_wood_fire_anim_large.png';
@@ -12,6 +13,7 @@ import wallPaintingImg from '../../assets/wall_stone_wood_painting_1_large.png';
 import wallControlsImg from '../../assets/wall_stone_wood_controls_large.png';
 import skyboxImg from '../../assets/skybox.png';
 import lampstandImg from '../../assets/lampstand_1_large.png';
+import zombieImg from '../../assets/test-zombie_1.png';
 import floorWoodImg from '../../assets/floor_wood_1.png';
 import ceilingWoodImg from '../../assets/wooden_panel_ceiling_1.png';
 
@@ -19,6 +21,7 @@ export { loadLevelRecipe };
 
 export class World {
   private readonly chunkManager: ChunkManager;
+  private readonly entityManager: EntityManager;
 
   public readonly skybox: Bitmap;
   public readonly floorTexture: Bitmap;
@@ -28,6 +31,7 @@ export class World {
 
   readonly wallImage: Bitmap;
   private readonly lampstand: Bitmap;
+  private readonly zombie: Bitmap;
   private readonly paintings: BlockSide[];
   private readonly boundaryBlock: Block;
 
@@ -82,6 +86,11 @@ export class World {
       textures.lampstand.width,
       textures.lampstand.height
     );
+    this.zombie = assets.createBitmap(
+      zombieImg,
+      textures.zombie.width,
+      textures.zombie.height
+    );
     this.floorTexture = assets.createBitmap(
       floorWoodImg,
       textures.floorWood.width,
@@ -101,20 +110,23 @@ export class World {
       { texture: this.wallImage }
     ];
     this.boundaryBlock = new Block(boundarySides);
+    this.entityManager = new EntityManager();
 
     this.chunkManager = new ChunkManager(
       recipe,
       {
         wallImage: this.wallImage,
         paintings: this.paintings,
-        lampstand: this.lampstand
+        lampstand: this.lampstand,
+        zombie: this.zombie
       },
-      this.boundaryBlock
+      this.boundaryBlock,
+      this.entityManager
     );
   }
 
   get sprites(): Sprite[] {
-    return this.chunkManager.getSprites();
+    return [...this.chunkManager.getStaticSprites(), ...this.entityManager.actors];
   }
 
   getBitmaps(): Bitmap[] {
@@ -122,6 +134,7 @@ export class World {
       this.wallImage,
       this.skybox,
       this.lampstand,
+      this.zombie,
       this.floorTexture,
       this.ceilingTexture,
       ...this.paintings.map((p) => p.texture).filter((t): t is Bitmap => !!t)
@@ -132,8 +145,8 @@ export class World {
     return this.chunkManager.findSafeSpawn();
   }
 
-  ensureAround(x: number, y: number): void {
-    this.chunkManager.ensureAround(x, y);
+  ensureAround(x: number, y: number, spawnExclude?: { x: number; y: number }): void {
+    this.chunkManager.ensureAround(x, y, spawnExclude);
   }
 
   isOpen(x: number, y: number): boolean {
@@ -147,6 +160,7 @@ export class World {
   update(seconds: number, playerX: number, playerY: number): void {
     this.deltaTime += seconds;
     this.chunkManager.updateStreaming(playerX, playerY);
+    this.entityManager.update(seconds, { x: playerX, y: playerY }, this);
     this.light = 1;
   }
 }

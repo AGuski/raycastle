@@ -8,6 +8,8 @@ export interface GeneratorParams {
   wallDensity: number;
   lampDensity: number;
   lampPlayerClearRadius: number;
+  enemyDensity: number;
+  enemyPlayerClearRadius: number;
   borderPortalCount: { min: number; max: number };
 }
 
@@ -41,6 +43,8 @@ export function defaultGeneratorParams(): GeneratorParams {
     wallDensity: world.wallDensity,
     lampDensity: world.lampDensity,
     lampPlayerClearRadius: world.lampPlayerClearRadius,
+    enemyDensity: world.enemyDensity,
+    enemyPlayerClearRadius: world.enemyPlayerClearRadius,
     borderPortalCount: { ...world.borderPortalCount }
   };
 }

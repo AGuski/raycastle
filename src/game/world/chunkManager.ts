@@ -1,5 +1,5 @@
 import { Block } from '../block';
-import { Sprite } from '../entities/sprite';
+import { StaticSprite } from '../entities/sprite';
 import { isOpenCell, MapCell } from '../../types';
 import {
   Chunk,
@@ -8,6 +8,7 @@ import {
   worldToChunk,
   worldToLocal
 } from './chunk';
+import { EntityManager } from './entityManager';
 import { DecorationAssets } from './generator/decorate';
 import { generateChunk } from './generator/generateChunk';
 import { carveOpenPad, buildTerrainMask } from './generator/terrain';
@@ -27,7 +28,8 @@ export class ChunkManager {
   constructor(
     private readonly recipe: LevelRecipe,
     private readonly assets: DecorationAssets,
-    boundaryBlock: Block
+    boundaryBlock: Block,
+    private readonly entityManager: EntityManager
   ) {
     this.worldSeed = hashSeed(recipe.seed);
     this.boundaryBlock = boundaryBlock;
@@ -62,7 +64,7 @@ export class ChunkManager {
     const existing = this.chunks.get(key);
     if (existing) return existing;
 
-    const chunk = generateChunk(
+    const { chunk, actors } = generateChunk(
       cx,
       cy,
       this.worldSeed,
@@ -71,17 +73,23 @@ export class ChunkManager {
       spawnExclude
     );
     this.chunks.set(key, chunk);
+    this.entityManager.addChunkActors(cx, cy, actors);
     return chunk;
   }
 
-  ensureNeighborhood(cx: number, cy: number, radius?: number): void {
+  ensureNeighborhood(
+    cx: number,
+    cy: number,
+    radius?: number,
+    spawnExclude?: { x: number; y: number }
+  ): void {
     const r = radius ?? this.recipe.generator.loadRadius;
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
         const ncx = cx + dx;
         const ncy = cy + dy;
         if (this.isWithinBounds(ncx, ncy)) {
-          this.loadChunk(ncx, ncy);
+          this.loadChunk(ncx, ncy, spawnExclude);
         }
       }
     }
@@ -130,7 +138,11 @@ export class ChunkManager {
     }
   }
 
-  ensureAround(playerX: number, playerY: number): void {
+  ensureAround(
+    playerX: number,
+    playerY: number,
+    spawnExclude?: { x: number; y: number }
+  ): void {
     if (this.recipe.infinityMode === false) {
       this.ensureAllBoundedChunks();
       return;
@@ -138,7 +150,7 @@ export class ChunkManager {
 
     const { chunkSize, loadRadius } = this.recipe.generator;
     const { cx, cy } = worldToChunk(playerX, playerY, chunkSize);
-    this.ensureNeighborhood(cx, cy, loadRadius);
+    this.ensureNeighborhood(cx, cy, loadRadius, spawnExclude);
   }
 
   getCell(wx: number, wy: number): MapCell {
@@ -160,8 +172,8 @@ export class ChunkManager {
     return isOpenCell(this.getCell(wx, wy));
   }
 
-  getSprites(): Sprite[] {
-    const sprites: Sprite[] = [];
+  getStaticSprites(): StaticSprite[] {
+    const sprites: StaticSprite[] = [];
     for (const chunk of this.chunks.values()) {
       sprites.push(...chunk.sprites);
     }
@@ -190,10 +202,11 @@ export class ChunkManager {
     const spawn = hint ?? this.recipe.spawn ?? { x: 0.5, y: 0.5, direction: 0 };
     const direction = spawn.direction ?? 0;
     const { chunkSize } = this.recipe.generator;
+    const spawnExclude = { x: spawn.x, y: spawn.y };
 
     const px = Math.floor(spawn.x);
     const py = Math.floor(spawn.y);
-    this.ensureAround(spawn.x, spawn.y);
+    this.ensureAround(spawn.x, spawn.y, spawnExclude);
 
     if (this.isOpen(px, py)) {
       return { x: spawn.x, y: spawn.y, direction };
@@ -205,7 +218,7 @@ export class ChunkManager {
           if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
           const wx = px + dx;
           const wy = py + dy;
-          this.ensureAround(wx + 0.5, wy + 0.5);
+          this.ensureAround(wx + 0.5, wy + 0.5, spawnExclude);
           if (this.isOpen(wx, wy)) {
             return { x: wx + 0.5, y: wy + 0.5, direction };
           }

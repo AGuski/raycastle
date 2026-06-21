@@ -1,6 +1,12 @@
 import { Bitmap } from '../block';
 
-export class Sprite {
+export interface Sprite {
+  texture: Bitmap;
+  x: number;
+  y: number;
+}
+
+export class StaticSprite implements Sprite {
   public timesHit = 0;
 
   constructor(

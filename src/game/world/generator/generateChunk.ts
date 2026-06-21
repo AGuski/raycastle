@@ -1,12 +1,20 @@
+import { CONFIG } from '../../../core/config';
+import { ActorEntity } from '../../entities/actorEntity';
 import { Chunk } from '../chunk';
 import { GeneratorParams } from '../levelRecipe';
 import {
   applyTerrainToCells,
   DecorationAssets,
+  scatterActors,
   scatterLamps
 } from './decorate';
 import { buildTerrainMask } from './terrain';
 import { chunkSeed, SeededRng } from './seededRng';
+
+export interface GenerateChunkResult {
+  chunk: Chunk;
+  actors: ActorEntity[];
+}
 
 export function generateChunk(
   cx: number,
@@ -15,9 +23,16 @@ export function generateChunk(
   params: GeneratorParams,
   assets: DecorationAssets,
   spawnExclude?: { x: number; y: number }
-): Chunk {
-  const { chunkSize, wallDensity, lampDensity, lampPlayerClearRadius, borderPortalCount } =
-    params;
+): GenerateChunkResult {
+  const {
+    chunkSize,
+    wallDensity,
+    lampDensity,
+    lampPlayerClearRadius,
+    enemyDensity,
+    enemyPlayerClearRadius,
+    borderPortalCount
+  } = params;
 
   const mask = buildTerrainMask(
     worldSeed,
@@ -30,12 +45,34 @@ export function generateChunk(
 
   const rng = new SeededRng(chunkSeed(worldSeed, cx, cy));
   const cells = applyTerrainToCells(mask, chunkSize, assets, rng);
+  const scatterExclude = {
+    excludeWx: spawnExclude?.x,
+    excludeWy: spawnExclude?.y
+  };
+
   const sprites = scatterLamps(cells, chunkSize, cx, cy, rng.fork(0x4c41), assets, {
     lampDensity,
-    excludeWx: spawnExclude?.x,
-    excludeWy: spawnExclude?.y,
-    clearRadius: lampPlayerClearRadius
+    clearRadius: lampPlayerClearRadius,
+    ...scatterExclude
   });
 
-  return new Chunk(cx, cy, cells, sprites);
+  const actors = scatterActors(
+    cells,
+    chunkSize,
+    cx,
+    cy,
+    rng.fork(0x5a01),
+    assets,
+    CONFIG.actors.zombie,
+    {
+      enemyDensity,
+      clearRadius: enemyPlayerClearRadius,
+      ...scatterExclude
+    }
+  );
+
+  return {
+    chunk: new Chunk(cx, cy, cells, sprites),
+    actors
+  };
 }

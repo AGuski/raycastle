@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Block, BlockSide } from '../block';
 import { ChunkManager } from './chunkManager';
+import { EntityManager } from './entityManager';
 import { defaultGeneratorParams } from './levelRecipe';
 
 const PARAMS = defaultGeneratorParams();
@@ -15,7 +16,12 @@ function mockBitmap() {
 
 function mockAssets() {
   const w = mockBitmap();
-  return { wallImage: w, paintings: [{ texture: w } as BlockSide], lampstand: w };
+  return {
+    wallImage: w,
+    paintings: [{ texture: w } as BlockSide],
+    lampstand: w,
+    zombie: w
+  };
 }
 
 function mockBoundary() {
@@ -33,7 +39,8 @@ describe('boot', () => {
     const m = new ChunkManager(
       { seed: 'x', infinityMode: true, generator: PARAMS },
       mockAssets(),
-      mockBoundary()
+      mockBoundary(),
+      new EntityManager()
     );
     m.findSafeSpawn({ x: 0.5, y: 0.5 });
     expect(m.loadedChunkCount).toBeGreaterThanOrEqual(25);

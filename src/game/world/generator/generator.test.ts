@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Block, BlockSide } from '../../block';
 import { ChunkManager } from '../chunkManager';
+import { EntityManager } from '../entityManager';
 import { localIndex } from '../chunk';
-import { DecorationAssets } from './decorate';
+import { DecorationAssets, scatterActors } from './decorate';
 import { generateChunk } from './generateChunk';
 import {
   Edge,
@@ -10,9 +11,9 @@ import {
   edgeHasPortal,
   getSharedEdgeCells
 } from './terrain';
-import { hashSeed, mixHash, randomDefaultSeed } from './seededRng';
+import { hashSeed, mixHash, randomDefaultSeed, SeededRng } from './seededRng';
 import { defaultGeneratorParams } from '../levelRecipe';
-import { MAP_EMPTY } from '../../../types';
+import { MAP_EMPTY, MapCell } from '../../../types';
 
 const CHUNK_SIZE = 32;
 const WORLD_SEED = hashSeed('test-world');
@@ -32,7 +33,8 @@ function mockDecorationAssets(): DecorationAssets {
   return {
     wallImage,
     paintings: [painting],
-    lampstand: mockBitmap()
+    lampstand: mockBitmap(),
+    zombie: mockBitmap()
   };
 }
 
@@ -44,6 +46,10 @@ function mockBoundaryBlock(): Block {
     { texture },
     { texture }
   ]);
+}
+
+function mockEntityManager(): EntityManager {
+  return new EntityManager();
 }
 
 function cellIsOpen(cell: unknown): boolean {
@@ -68,10 +74,39 @@ describe('generateChunk determinism', () => {
     const a = generateChunk(2, -1, WORLD_SEED, PARAMS, assets);
     const b = generateChunk(2, -1, WORLD_SEED, PARAMS, assets);
 
-    expect(a.cells.length).toBe(b.cells.length);
-    for (let i = 0; i < a.cells.length; i++) {
-      expect(cellIsOpen(a.cells[i])).toBe(cellIsOpen(b.cells[i]));
+    expect(a.chunk.cells.length).toBe(b.chunk.cells.length);
+    for (let i = 0; i < a.chunk.cells.length; i++) {
+      expect(cellIsOpen(a.chunk.cells[i])).toBe(cellIsOpen(b.chunk.cells[i]));
     }
+  });
+});
+
+describe('scatterActors determinism', () => {
+  it('returns the same actor count for the same seed and chunk coord', () => {
+    const assets = mockDecorationAssets();
+    const config = {
+      speed: 1,
+      sightRange: 10,
+      proximityRadius: 1,
+      chaseOnSight: true
+    };
+    const params = {
+      enemyDensity: 0.015,
+      clearRadius: 4
+    };
+
+    const makeCells = () => {
+      const cells: MapCell[] = new Array(CHUNK_SIZE * CHUNK_SIZE).fill(MAP_EMPTY);
+      return cells;
+    };
+
+    const rngA = new SeededRng(12345);
+    const rngB = new SeededRng(12345);
+    const a = scatterActors(makeCells(), CHUNK_SIZE, 0, 0, rngA, assets, config, params);
+    const b = scatterActors(makeCells(), CHUNK_SIZE, 0, 0, rngB, assets, config, params);
+
+    expect(a.length).toBe(b.length);
+    expect(a.length).toBeGreaterThan(0);
   });
 });
 
@@ -90,8 +125,8 @@ describe('border consistency', () => {
     for (const { lxA, lyA, lxB, lyB } of shared) {
       const idxA = localIndex(lxA, lyA, CHUNK_SIZE);
       const idxB = localIndex(lxB, lyB, CHUNK_SIZE);
-      expect(cellIsOpen(first.cells[idxA])).toBe(cellIsOpen(second.cells[idxB]));
-      expect(cellIsOpen(reversedA.cells[idxB])).toBe(cellIsOpen(reversedB.cells[idxA]));
+      expect(cellIsOpen(first.chunk.cells[idxA])).toBe(cellIsOpen(second.chunk.cells[idxB]));
+      expect(cellIsOpen(reversedA.chunk.cells[idxB])).toBe(cellIsOpen(reversedB.chunk.cells[idxA]));
     }
   });
 });
@@ -123,7 +158,8 @@ describe('findSafeSpawn', () => {
         generator: PARAMS
       },
       mockDecorationAssets(),
-      mockBoundaryBlock()
+      mockBoundaryBlock(),
+      mockEntityManager()
     );
 
     const spawn = manager.findSafeSpawn({ x: 0.5, y: 0.5, direction: 0 });
@@ -140,7 +176,8 @@ describe('chunk streaming', () => {
         generator: { ...PARAMS, loadRadius: 1, unloadRadius: 1 }
       },
       mockDecorationAssets(),
-      mockBoundaryBlock()
+      mockBoundaryBlock(),
+      mockEntityManager()
     );
 
     manager.updateStreaming(0.5, 0.5);
@@ -161,7 +198,8 @@ describe('chunk streaming', () => {
         generator: { ...PARAMS, loadRadius: 2, unloadRadius: 4 }
       },
       mockDecorationAssets(),
-      mockBoundaryBlock()
+      mockBoundaryBlock(),
+      mockEntityManager()
     );
 
     manager.updateStreaming(0.5, 0.5);

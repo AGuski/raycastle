@@ -1,5 +1,6 @@
 import { Bitmap, Block, BlockSide, BlockSides } from '../../block';
-import { Sprite } from '../../entities/sprite';
+import { ActorEntity, ActorEntityConfig } from '../../entities/actorEntity';
+import { StaticSprite } from '../../entities/sprite';
 import { MAP_EMPTY, MapCell } from '../../../types';
 import { localIndex } from '../chunk';
 import { SeededRng } from './seededRng';
@@ -8,6 +9,7 @@ export interface DecorationAssets {
   wallImage: Bitmap;
   paintings: BlockSide[];
   lampstand: Bitmap;
+  zombie: Bitmap;
 }
 
 export function createDecoratedBlock(
@@ -26,8 +28,22 @@ export function createDecoratedBlock(
   return new Block(sides);
 }
 
+export interface ScatterParams {
+  density: number;
+  excludeWx?: number;
+  excludeWy?: number;
+  clearRadius: number;
+}
+
 export interface LampScatterParams {
   lampDensity: number;
+  excludeWx?: number;
+  excludeWy?: number;
+  clearRadius: number;
+}
+
+export interface ActorScatterParams {
+  enemyDensity: number;
   excludeWx?: number;
   excludeWy?: number;
   clearRadius: number;
@@ -53,23 +69,23 @@ export function applyTerrainToCells(
   return cells;
 }
 
-export function scatterLamps(
+function scatterOnOpenCells<T>(
   cells: MapCell[],
   chunkSize: number,
   cx: number,
   cy: number,
   rng: SeededRng,
-  assets: DecorationAssets,
-  params: LampScatterParams
-): Sprite[] {
-  const sprites: Sprite[] = [];
+  params: ScatterParams,
+  create: (wx: number, wy: number) => T
+): T[] {
+  const items: T[] = [];
   const clearRadiusSq = params.clearRadius * params.clearRadius;
 
   for (let ly = 0; ly < chunkSize; ly++) {
     for (let lx = 0; lx < chunkSize; lx++) {
       const index = localIndex(lx, ly, chunkSize);
       if (cells[index] !== MAP_EMPTY) continue;
-      if (rng.next() >= params.lampDensity) continue;
+      if (rng.next() >= params.density) continue;
 
       const wx = cx * chunkSize + lx + 0.5;
       const wy = cy * chunkSize + ly + 0.5;
@@ -80,9 +96,60 @@ export function scatterLamps(
         if (dx * dx + dy * dy < clearRadiusSq) continue;
       }
 
-      sprites.push(new Sprite(assets.lampstand, wx, wy));
+      items.push(create(wx, wy));
     }
   }
 
-  return sprites;
+  return items;
+}
+
+export function scatterLamps(
+  cells: MapCell[],
+  chunkSize: number,
+  cx: number,
+  cy: number,
+  rng: SeededRng,
+  assets: DecorationAssets,
+  params: LampScatterParams
+): StaticSprite[] {
+  return scatterOnOpenCells(
+    cells,
+    chunkSize,
+    cx,
+    cy,
+    rng,
+    {
+      density: params.lampDensity,
+      excludeWx: params.excludeWx,
+      excludeWy: params.excludeWy,
+      clearRadius: params.clearRadius
+    },
+    (wx, wy) => new StaticSprite(assets.lampstand, wx, wy)
+  );
+}
+
+export function scatterActors(
+  cells: MapCell[],
+  chunkSize: number,
+  cx: number,
+  cy: number,
+  rng: SeededRng,
+  assets: DecorationAssets,
+  config: ActorEntityConfig,
+  params: ActorScatterParams
+): ActorEntity[] {
+  return scatterOnOpenCells(
+    cells,
+    chunkSize,
+    cx,
+    cy,
+    rng,
+    {
+      density: params.enemyDensity,
+      excludeWx: params.excludeWx,
+      excludeWy: params.excludeWy,
+      clearRadius: params.clearRadius
+    },
+    (wx, wy) => new ActorEntity(assets.zombie, wx, wy, config)
+  );
 }
