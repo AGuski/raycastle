@@ -12,6 +12,7 @@ export interface DecorationAssets {
   lampstand: SpriteSheet;
   zombie: SpriteSheet;
   garrison?: SpriteSheet;
+  hunterLich?: SpriteSheet;
 }
 
 export function createDecoratedBlock(

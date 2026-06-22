@@ -1,5 +1,6 @@
 import { SpriteSheet } from '../spriteSheet';
 import { SpriteAnimator } from './spriteAnimator';
+import { SpriteEffect } from './spriteEffect';
 
 export interface Sprite {
   texture: SpriteSheet;
@@ -9,6 +10,8 @@ export interface Sprite {
   animationTime?: number;
   /** Optional procedural transform applied to the rendered billboard. */
   animator?: SpriteAnimator;
+  /** Fragment shader variant for this sprite; defaults to the standard pass. */
+  effect?: SpriteEffect;
 }
 
 export class StaticSprite implements Sprite {

@@ -16,6 +16,7 @@ import skyboxImg from '../../assets/skybox.png';
 import lampstandImg from '../../assets/lampstand_1_large.png';
 import zombieImg from '../../assets/Zombie_Test_Sprite.png';
 import garrisonImg from '../../assets/mr-garrison.png';
+import hunterLichImg from '../../assets/hunter_lich_1.png';
 import floorWoodImg from '../../assets/floor_wood_1.png';
 import ceilingWoodImg from '../../assets/wooden_panel_ceiling_1.png';
 
@@ -36,6 +37,7 @@ export class World {
   private readonly lampstand: SpriteSheet;
   private readonly zombie: SpriteSheet;
   private readonly garrison: SpriteSheet;
+  private readonly hunterLich: SpriteSheet;
   private readonly paintings: BlockSide[];
   private readonly boundaryBlock: Block;
 
@@ -116,6 +118,13 @@ export class World {
         textures.garrison.height
       )
     );
+    this.hunterLich = spriteSheet(
+      assets.createBitmap(
+        hunterLichImg,
+        textures.hunterLich.width,
+        textures.hunterLich.height
+      )
+    );
     this.floorTexture = assets.createBitmap(
       floorWoodImg,
       textures.floorWood.width,
@@ -144,7 +153,8 @@ export class World {
         paintings: this.paintings,
         lampstand: this.lampstand,
         zombie: this.zombie,
-        garrison: this.garrison
+        garrison: this.garrison,
+        hunterLich: this.hunterLich
       },
       this.boundaryBlock,
       this.entityManager
@@ -162,6 +172,7 @@ export class World {
       this.lampstand.bitmap,
       this.zombie.bitmap,
       this.garrison.bitmap,
+      this.hunterLich.bitmap,
       this.floorTexture,
       this.ceilingTexture,
       ...this.paintings

@@ -3,9 +3,12 @@ import { hasLineOfSight } from '../../engine/lineOfSight';
 import { RaycastWorld } from '../../engine/raycaster';
 import { Point } from '../../types';
 import { Sprite } from './sprite';
+import { SpriteEffect } from './spriteEffect';
 import {
   BounceWalkAnimator,
   BounceWalkConfig,
+  HoverAnimator,
+  HoverConfig,
   SpriteAnimator
 } from './spriteAnimator';
 
@@ -22,6 +25,13 @@ export interface ActorEntityConfig {
    * sprites that have no walk cycle of their own.
    */
   bounceWalk?: BounceWalkConfig;
+  /**
+   * When set, the actor uses a smooth vertical hover transform. Animates even
+   * while idle so floating creatures never look frozen in place.
+   */
+  hover?: HoverConfig;
+  /** Optional fragment shader applied when this actor is drawn. */
+  spriteEffect?: SpriteEffect;
 }
 
 export interface ActorWorld extends RaycastWorld {
@@ -31,6 +41,7 @@ export interface ActorWorld extends RaycastWorld {
 export class ActorEntity implements Sprite {
   animationTime = 0;
   readonly animator?: SpriteAnimator;
+  readonly effect?: SpriteEffect;
 
   constructor(
     public texture: SpriteSheet,
@@ -38,7 +49,10 @@ export class ActorEntity implements Sprite {
     public y: number,
     public readonly config: ActorEntityConfig
   ) {
-    if (config.bounceWalk) {
+    this.effect = config.spriteEffect;
+    if (config.hover) {
+      this.animator = new HoverAnimator(config.hover);
+    } else if (config.bounceWalk) {
       this.animator = new BounceWalkAnimator(config.bounceWalk);
     }
   }
@@ -67,7 +81,7 @@ export class ActorEntity implements Sprite {
       }
     }
 
-    if (this.x !== prevX || this.y !== prevY) {
+    if (this.x !== prevX || this.y !== prevY || this.config.hover) {
       this.animationTime += seconds * (this.config.animationSpeed ?? 1);
     }
   }

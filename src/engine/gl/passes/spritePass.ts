@@ -1,5 +1,6 @@
 import { CONFIG } from '../../../core/config';
 import { Sprite } from '../../../game/entities/sprite';
+import { SpriteEffect } from '../../../game/entities/spriteEffect';
 import { isIdentityTransform } from '../../../game/entities/spriteAnimator';
 import { Player } from '../../../game/player';
 import { World } from '../../../game/world';
@@ -9,8 +10,10 @@ import { Program } from '../program';
 import { QuadBatch } from '../quadBatch';
 import { FrameContext, RenderPass } from '../renderPass';
 import fogGlsl from '../shaders/lib/fog.glsl?raw';
+import noiseGlsl from '../shaders/lib/noise.glsl?raw';
 import quadVert from '../shaders/quad.vert.glsl?raw';
 import spriteFrag from '../shaders/sprite.frag.glsl?raw';
+import spriteMiasmaFrag from '../shaders/spriteMiasma.frag.glsl?raw';
 
 interface SpriteStrip {
   left: number;
@@ -20,29 +23,41 @@ interface SpriteStrip {
   texColumn: number;
   depth: number;
   texture: GLTexture;
+  effect: SpriteEffect;
   /** When set, the strip is drawn as a rotated/translated quad (px corners). */
   quad?: [number, number, number, number, number, number, number, number];
 }
 
+const SPRITE_EFFECTS: SpriteEffect[] = ['none', 'darkMiasma'];
+
 export class SpritePass implements RenderPass {
-  private program: Program | null = null;
+  private readonly programs = new Map<SpriteEffect, Program>();
   private batch: QuadBatch | null = null;
   private readonly fogInvRange =
     1 / (CONFIG.fogEnd - CONFIG.fogStart);
 
   init(gl: WebGL2RenderingContext): void {
-    const handle = linkProgram(
-      gl,
-      combineShader(quadVert),
-      combineShader(fogGlsl, spriteFrag)
-    );
-    this.program = new Program(gl, handle);
+    const programSources: Record<SpriteEffect, string> = {
+      none: combineShader(fogGlsl, spriteFrag),
+      darkMiasma: combineShader(fogGlsl, noiseGlsl, spriteMiasmaFrag)
+    };
+
+    for (const effect of SPRITE_EFFECTS) {
+      const handle = linkProgram(gl, combineShader(quadVert), programSources[effect]);
+      this.programs.set(effect, new Program(gl, handle));
+    }
+
+    const defaultProgram = this.programs.get('none');
+    if (!defaultProgram) {
+      throw new Error('Sprite pass missing default program');
+    }
+
     this.batch = new QuadBatch(
       gl,
       CONFIG.resolution * 8,
-      this.program.attrib('aPosition'),
-      this.program.attrib('aTexCoord'),
-      this.program.attrib('aDepth')
+      defaultProgram.attrib('aPosition'),
+      defaultProgram.attrib('aTexCoord'),
+      defaultProgram.attrib('aDepth')
     );
   }
 
@@ -50,51 +65,67 @@ export class SpritePass implements RenderPass {
 
   render(ctx: FrameContext): void {
     const gl = ctx.gl;
-    const program = this.program;
     const batch = this.batch;
-    if (!program || !batch) return;
+    if (!batch) return;
 
     const strips = this.collectSprites(ctx, ctx.player, ctx.world);
     if (strips.length === 0) return;
 
-    program.use();
-    gl.uniform2f(program.uniform('uResolution'), ctx.width, ctx.height);
-    gl.uniform1f(program.uniform('uSpacing'), ctx.spacing);
-    gl.uniform1f(program.uniform('uFogStart'), CONFIG.fogStart);
-    gl.uniform1f(program.uniform('uFogInvRange'), this.fogInvRange);
-    gl.uniform3f(
-      program.uniform('uFogColor'),
-      CONFIG.fogColor[0],
-      CONFIG.fogColor[1],
-      CONFIG.fogColor[2]
-    );
-    ctx.zBufferTex.bind(1);
-    gl.uniform1i(program.uniform('uZBuffer'), 1);
-
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    ctx.zBufferTex.bind(1);
 
     let index = 0;
     while (index < strips.length) {
-      const texture = strips[index].texture;
+      const strip = strips[index];
+      const program = this.programs.get(strip.effect);
+      if (!program) {
+        index++;
+        continue;
+      }
+
+      program.use();
+      gl.uniform2f(program.uniform('uResolution'), ctx.width, ctx.height);
+      gl.uniform1f(program.uniform('uSpacing'), ctx.spacing);
+      gl.uniform1f(program.uniform('uFogStart'), CONFIG.fogStart);
+      gl.uniform1f(program.uniform('uFogInvRange'), this.fogInvRange);
+      gl.uniform3f(
+        program.uniform('uFogColor'),
+        CONFIG.fogColor[0],
+        CONFIG.fogColor[1],
+        CONFIG.fogColor[2]
+      );
+      gl.uniform1i(program.uniform('uZBuffer'), 1);
+
+      if (strip.effect === 'darkMiasma') {
+        gl.uniform1f(program.uniform('uTime'), ctx.time);
+        gl.uniform1f(program.uniform('uLayerSeed'), 0);
+        gl.uniform1f(program.uniform('uSmokeOnly'), 0);
+      }
+
+      const texture = strip.texture;
       batch.clear();
-      while (index < strips.length && strips[index].texture.handle === texture.handle) {
-        const strip = strips[index];
-        if (strip.quad) {
-          const q = strip.quad;
+      while (
+        index < strips.length &&
+        strips[index].texture.handle === texture.handle &&
+        strips[index].effect === strip.effect
+      ) {
+        const current = strips[index];
+        if (current.quad) {
+          const q = current.quad;
           batch.pushColumnStripQuad(
             q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7],
-            strip.texColumn,
-            strip.depth
+            current.texColumn,
+            current.depth
           );
         } else {
           batch.pushColumnStrip(
-            strip.left,
-            strip.top,
-            strip.width,
-            strip.height,
-            strip.texColumn,
-            strip.depth
+            current.left,
+            current.top,
+            current.width,
+            current.height,
+            current.texColumn,
+            current.depth
           );
         }
         index++;
@@ -112,6 +143,14 @@ export class SpritePass implements RenderPass {
       );
 
       batch.draw();
+
+      // Second miasma layer: offset phase/position, smoke only, blended on top.
+      if (strip.effect === 'darkMiasma') {
+        gl.uniform1f(program.uniform('uLayerSeed'), 1);
+        gl.uniform1f(program.uniform('uSmokeOnly'), 1);
+        batch.draw();
+      }
+
       batch.unbind();
     }
 
@@ -170,6 +209,7 @@ export class SpritePass implements RenderPass {
     const endColumn = Math.min(ctx.columns, Math.ceil(screenX + spriteWidth / 2));
     const sheet = sprite.texture;
     const tex = getBitmapTexture(ctx.gl, sheet.bitmap);
+    const effect = sprite.effect ?? 'none';
     const animTime = sprite.animationTime ?? world.deltaTime;
     const strips: SpriteStrip[] = [];
 
@@ -210,7 +250,8 @@ export class SpritePass implements RenderPass {
           height: spriteHeight,
           texColumn,
           depth: transformY,
-          texture: tex
+          texture: tex,
+          effect
         });
         continue;
       }
@@ -228,6 +269,7 @@ export class SpritePass implements RenderPass {
         texColumn,
         depth: transformY,
         texture: tex,
+        effect,
         quad: [
           ...transformCorner(x0, yTop, pivotX, pivotY, scale, cos, sin),
           ...transformCorner(x1, yTop, pivotX, pivotY, scale, cos, sin),
@@ -242,7 +284,10 @@ export class SpritePass implements RenderPass {
 
   dispose(): void {
     this.batch?.dispose();
-    this.program?.dispose();
+    for (const program of this.programs.values()) {
+      program.dispose();
+    }
+    this.programs.clear();
   }
 }
 

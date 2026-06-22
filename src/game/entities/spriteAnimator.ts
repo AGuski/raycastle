@@ -70,3 +70,29 @@ export class BounceWalkAnimator implements SpriteAnimator {
     };
   }
 }
+
+export interface HoverConfig {
+  /** Hover cycles per second. */
+  frequency: number;
+  /** Peak vertical offset as a fraction of sprite height. */
+  amplitude: number;
+}
+
+export const DEFAULT_HOVER: HoverConfig = {
+  frequency: 0.9,
+  amplitude: 0.04
+};
+
+/** Smooth vertical float for legless or flying sprites. */
+export class HoverAnimator implements SpriteAnimator {
+  constructor(private readonly config: HoverConfig = DEFAULT_HOVER) {}
+
+  transformAt(time: number): SpriteTransform {
+    const phase = time * this.config.frequency * TAU;
+    return {
+      rotation: 0,
+      translation: { x: 0, y: Math.sin(phase) * this.config.amplitude },
+      scale: 1
+    };
+  }
+}

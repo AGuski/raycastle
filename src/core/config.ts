@@ -33,7 +33,8 @@ export const CONFIG = {
     lampPlayerClearRadius: 2,
     enemyDensity: 0.015,
     enemyPlayerClearRadius: 4,
-    garrisonDensity: 0.01,
+    garrisonDensity: 0.002,
+    hunterLichDensity: 0.001,
     borderPortalCount: { min: 1, max: 3 }
   },
   actors: {
@@ -55,6 +56,18 @@ export const CONFIG = {
         swayAngle: 0.1,
         bobHeight: 0.05
       }
+    },
+    hunterLich: {
+      speed: 0.65,
+      sightRange: 18,
+      proximityRadius: 1.5,
+      chaseOnSight: true,
+      animationSpeed: 1,
+      spriteEffect: 'darkMiasma',
+      hover: {
+        frequency: 0.7,
+        amplitude: 0.04
+      }
     }
   },
   textures: {
@@ -68,6 +81,7 @@ export const CONFIG = {
     lampstand: { width: 1024, height: 1024 },
     zombie: { width: 3072, height: 512, frames: 6 },
     garrison: { width: 1024, height: 1024 },
+    hunterLich: { width: 1024, height: 1024 },
     floorWood: { width: 1024, height: 1024 },
     ceilingWood: { width: 1024, height: 1024 }
   }

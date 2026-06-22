@@ -32,6 +32,7 @@ export function generateChunk(
     enemyDensity,
     enemyPlayerClearRadius,
     garrisonDensity,
+    hunterLichDensity,
     borderPortalCount
   } = params;
 
@@ -88,6 +89,26 @@ export function generateChunk(
           ...scatterExclude
         },
         assets.garrison
+      )
+    );
+  }
+
+  if (assets.hunterLich) {
+    actors.push(
+      ...scatterActors(
+        cells,
+        chunkSize,
+        cx,
+        cy,
+        rng.fork(0x71c4),
+        assets,
+        CONFIG.actors.hunterLich,
+        {
+          enemyDensity: hunterLichDensity,
+          clearRadius: enemyPlayerClearRadius,
+          ...scatterExclude
+        },
+        assets.hunterLich
       )
     );
   }

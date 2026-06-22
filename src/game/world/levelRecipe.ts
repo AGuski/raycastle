@@ -11,6 +11,7 @@ export interface GeneratorParams {
   enemyDensity: number;
   enemyPlayerClearRadius: number;
   garrisonDensity: number;
+  hunterLichDensity: number;
   borderPortalCount: { min: number; max: number };
 }
 
@@ -47,6 +48,7 @@ export function defaultGeneratorParams(): GeneratorParams {
     enemyDensity: world.enemyDensity,
     enemyPlayerClearRadius: world.enemyPlayerClearRadius,
     garrisonDensity: world.garrisonDensity,
+    hunterLichDensity: world.hunterLichDensity,
     borderPortalCount: { ...world.borderPortalCount }
   };
 }

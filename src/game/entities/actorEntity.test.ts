@@ -148,4 +148,22 @@ describe('ActorEntity.update', () => {
 
     expect(actor.animationTime).toBe(1);
   });
+
+  it('advances animation time while idle when hover is configured', () => {
+    const world = new TestWorld([
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
+    ]);
+    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+      speed: 2,
+      sightRange: 10,
+      proximityRadius: 1,
+      chaseOnSight: false,
+      hover: { frequency: 1, amplitude: 0.05 }
+    });
+
+    actor.update(0.5, { x: 3.5, y: 0.5 }, world);
+
+    expect(actor.animationTime).toBe(0.5);
+  });
 });
