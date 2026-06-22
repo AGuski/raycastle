@@ -1,8 +1,11 @@
 import { CONFIG } from '../../core/config';
 import { AssetManager } from '../../engine/assets';
 import { Bitmap, Block, BlockSide, BlockSides } from '../block';
-import { ActorEntity } from '../entities/actorEntity';
+import { PlayerView } from '../entities/component';
+import { Entity } from '../entities/entity';
+import { spritesFromEntities } from '../entities/spritesFromEntities';
 import { Sprite } from '../entities/sprite';
+import { runSystems } from '../systems/runSystems';
 import { spriteSheet, SpriteSheet } from '../spriteSheet';
 import { isOpenCell, MapCell } from '../../types';
 import { ChunkManager } from './chunkManager';
@@ -163,11 +166,14 @@ export class World {
   }
 
   get sprites(): Sprite[] {
-    return [...this.chunkManager.getStaticSprites(), ...this.entityManager.actors];
+    return spritesFromEntities([
+      ...this.chunkManager.getStaticEntities(),
+      ...this.entityManager.entities
+    ]);
   }
 
-  get actors(): readonly ActorEntity[] {
-    return this.entityManager.actors;
+  get entities(): readonly Entity[] {
+    return this.entityManager.entities;
   }
 
   getBitmaps(): Bitmap[] {
@@ -202,10 +208,28 @@ export class World {
     return this.chunkManager.getCell(x, y);
   }
 
-  update(seconds: number, playerX: number, playerY: number): void {
+  setCell(wx: number, wy: number, cell: MapCell): void {
+    this.chunkManager.setCell(wx, wy, cell);
+  }
+
+  update(seconds: number, player: PlayerView): void {
     this.deltaTime += seconds;
-    this.chunkManager.updateStreaming(playerX, playerY);
-    this.entityManager.update(seconds, { x: playerX, y: playerY }, this);
+    this.chunkManager.updateStreaming(player.x, player.y);
+    this.chunkManager.updateCellEntities(seconds, player, this);
+    this.entityManager.update(seconds, player, this);
     this.light = 1;
+  }
+
+  /** Cross-entity systems (contact, weapon strike). Call after player input is applied. */
+  runSystems(player: PlayerView): void {
+    runSystems(
+      {
+        dt: 0,
+        time: this.deltaTime,
+        world: this,
+        player
+      },
+      this.entityManager.entities
+    );
   }
 }

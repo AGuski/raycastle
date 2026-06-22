@@ -1,5 +1,5 @@
 import { CONFIG } from '../../../core/config';
-import { ActorEntity } from '../../entities/actorEntity';
+import { Entity } from '../../entities/entity';
 import { Chunk } from '../chunk';
 import { GeneratorParams } from '../levelRecipe';
 import {
@@ -10,10 +10,11 @@ import {
 } from './decorate';
 import { buildTerrainMask } from './terrain';
 import { chunkSeed, SeededRng } from './seededRng';
+import { scatterHiddenDoors } from './hiddenDoors';
 
 export interface GenerateChunkResult {
   chunk: Chunk;
-  actors: ActorEntity[];
+  entities: Entity[];
 }
 
 export function generateChunk(
@@ -33,7 +34,10 @@ export function generateChunk(
     enemyPlayerClearRadius,
     garrisonDensity,
     hunterLichDensity,
-    borderPortalCount
+    borderPortalCount,
+    hiddenDoorDensity,
+    hiddenDoorOpenRadius,
+    hiddenDoorPlayerClearRadius
   } = params;
 
   const mask = buildTerrainMask(
@@ -52,13 +56,28 @@ export function generateChunk(
     excludeWy: spawnExclude?.y
   };
 
-  const sprites = scatterLamps(cells, chunkSize, cx, cy, rng.fork(0x4c41), assets, {
+  const staticEntities = scatterLamps(cells, chunkSize, cx, cy, rng.fork(0x4c41), assets, {
     lampDensity,
     clearRadius: lampPlayerClearRadius,
     ...scatterExclude
   });
 
-  const actors = scatterActors(
+  const cellEntities = scatterHiddenDoors(
+    mask,
+    cells,
+    chunkSize,
+    cx,
+    cy,
+    rng.fork(0x8d00),
+    {
+      density: hiddenDoorDensity,
+      openRadius: hiddenDoorOpenRadius,
+      clearRadius: hiddenDoorPlayerClearRadius,
+      ...scatterExclude
+    }
+  );
+
+  const entities = scatterActors(
     cells,
     chunkSize,
     cx,
@@ -74,7 +93,7 @@ export function generateChunk(
   );
 
   if (assets.garrison) {
-    actors.push(
+    entities.push(
       ...scatterActors(
         cells,
         chunkSize,
@@ -94,7 +113,7 @@ export function generateChunk(
   }
 
   if (assets.hunterLich) {
-    actors.push(
+    entities.push(
       ...scatterActors(
         cells,
         chunkSize,
@@ -114,7 +133,7 @@ export function generateChunk(
   }
 
   return {
-    chunk: new Chunk(cx, cy, cells, sprites),
-    actors
+    chunk: new Chunk(cx, cy, cells, staticEntities, cellEntities),
+    entities
   };
 }

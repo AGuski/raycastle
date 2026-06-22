@@ -102,7 +102,12 @@ export const CONFIG = {
     enemyPlayerClearRadius: 4,
     garrisonDensity: 0.002,
     hunterLichDensity: 0.008,
-    borderPortalCount: { min: 1, max: 3 }
+    borderPortalCount: { min: 1, max: 3 },
+    /** Per-candidate probability of placing a hidden door in a chunk. */
+    hiddenDoorDensity: 0.2,
+    /** Player distance at which a hidden door opens (world units). */
+    hiddenDoorOpenRadius: 2.2,
+    hiddenDoorPlayerClearRadius: 4
   },
   actors: {
     zombie: {

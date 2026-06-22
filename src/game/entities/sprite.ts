@@ -15,18 +15,3 @@ export interface Sprite {
   /** 0–1 red flash for recent weapon hits; omit when not applicable. */
   getHitFlash?(time: number): number;
 }
-
-export class StaticSprite implements Sprite {
-  public timesHit = 0;
-
-  constructor(
-    public texture: SpriteSheet,
-    public x: number,
-    public y: number
-  ) {}
-
-  put(x: number, y: number): void {
-    this.x = x;
-    this.y = y;
-  }
-}

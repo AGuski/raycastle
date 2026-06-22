@@ -1,7 +1,7 @@
 import { Block, BlockSide, BlockSides } from '../../block';
-import { ActorEntity, ActorEntityConfig } from '../../entities/actorEntity';
-import { createStrikeableActor } from '../../entities/strikeable';
-import { StaticSprite } from '../../entities/sprite';
+import { ActorSpawnConfig, createStrikeableActor } from '../../entities/spawnActor';
+import { Entity } from '../../entities/entity';
+import { spawnStaticSprite } from '../../entities/staticSprite';
 import { SpriteSheet } from '../../spriteSheet';
 import { MAP_EMPTY, MapCell } from '../../../types';
 import { localIndex } from '../chunk';
@@ -115,7 +115,7 @@ export function scatterLamps(
   rng: SeededRng,
   assets: DecorationAssets,
   params: LampScatterParams
-): StaticSprite[] {
+): Entity[] {
   return scatterOnOpenCells(
     cells,
     chunkSize,
@@ -128,7 +128,7 @@ export function scatterLamps(
       excludeWy: params.excludeWy,
       clearRadius: params.clearRadius
     },
-    (wx, wy) => new StaticSprite(assets.lampstand, wx, wy)
+    (wx, wy) => spawnStaticSprite(assets.lampstand, wx, wy)
   );
 }
 
@@ -139,10 +139,10 @@ export function scatterActors(
   cy: number,
   rng: SeededRng,
   assets: DecorationAssets,
-  config: ActorEntityConfig,
+  config: ActorSpawnConfig,
   params: ActorScatterParams,
   texture: SpriteSheet = assets.zombie
-): ActorEntity[] {
+): Entity[] {
   return scatterOnOpenCells(
     cells,
     chunkSize,

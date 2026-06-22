@@ -1,9 +1,9 @@
-import { CONFIG } from '../core/config';
-import { hasLineOfSight } from '../engine/lineOfSight';
-import { Point } from '../types';
-import { ActorEntity, ActorWorld } from './entities/actorEntity';
-import { Strikeable } from './entities/strikeable';
-import { Player } from './player';
+import { CONFIG } from '../../core/config';
+import { hasLineOfSight } from '../../engine/lineOfSight';
+import { Point } from '../../types';
+import { ComponentContext } from '../entities/component';
+import { Entity } from '../entities/entity';
+import { Strikeable } from '../entities/components/strikeable';
 
 export interface StrikeViewer {
   x: number;
@@ -40,25 +40,24 @@ export function isStrikeActive(
   return progress >= strike.activeStart && progress <= strike.activeEnd;
 }
 
-/** Marks strikeable actors hit by the current swing during its active frames. */
+/** Marks strikeable entities hit by the current swing during its active frames. */
 export function resolveWeaponStrike(
-  player: Player,
-  actors: readonly ActorEntity[],
-  world: ActorWorld,
-  worldTime: number
+  ctx: ComponentContext,
+  entities: Iterable<Entity>
 ): void {
+  const { player, time, world } = ctx;
   if (player.sheathed || player.swingProgress <= 0) return;
   if (!isStrikeActive(player.swingProgress)) return;
 
-  for (const actor of actors) {
-    const strikeable = actor.strikeable;
+  for (const entity of entities) {
+    const strikeable = entity.get(Strikeable);
     if (!strikeable) continue;
     if (strikeable.wasHitBySwing(player.swingId)) continue;
-    if (!isInStrikeCone(player, actor)) continue;
-    if (!hasLineOfSight(world, player, actor)) continue;
+    if (!isInStrikeCone(player, entity)) continue;
+    if (!hasLineOfSight(world, player, entity)) continue;
 
-    applyStrike(strikeable, player.swingId, player, worldTime);
-    console.log('[strike] hit actor', { x: actor.x, y: actor.y });
+    applyStrike(strikeable, player.swingId, player, time);
+    console.log('[strike] hit actor', { x: entity.x, y: entity.y });
   }
 }
 

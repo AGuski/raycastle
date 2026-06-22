@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../core/config';
-import { contactDetectRadius } from '../contact';
+import { contactDetectRadius, distanceBetween } from '../contact';
 import { Block } from '../block';
-import { ActorEntity } from '../entities/actorEntity';
+import { Renderable } from './components/renderable';
+import { ContactSensor } from './components/contactSensor';
+import { spawnActor } from './spawnActor';
+import { Entity } from './entity';
 import { spriteSheet } from '../spriteSheet';
 import { hasLineOfSight } from '../../engine/lineOfSight';
-import { MAP_EMPTY, MapCell } from '../../types';
+import { MAP_EMPTY, MapCell, Point } from '../../types';
+import { ComponentContext } from './component';
 
 function mockTexture() {
   return spriteSheet({
@@ -26,11 +30,9 @@ function mockWall(): Block {
 }
 
 class TestWorld {
-  private readonly cells: MapCell[][];
+  deltaTime = 0;
 
-  constructor(cells: MapCell[][]) {
-    this.cells = cells;
-  }
+  constructor(private readonly cells: MapCell[][]) {}
 
   getBlock(x: number, y: number): MapCell {
     const fx = Math.floor(x);
@@ -43,6 +45,28 @@ class TestWorld {
   isOpen(x: number, y: number): boolean {
     return this.getBlock(x, y) === MAP_EMPTY;
   }
+}
+
+function tickActor(
+  entity: Entity,
+  dt: number,
+  target: Point,
+  world: TestWorld
+): void {
+  world.deltaTime += dt;
+  entity.update({
+    dt,
+    time: world.deltaTime,
+    world,
+    player: {
+      x: target.x,
+      y: target.y,
+      direction: 0,
+      sheathed: false,
+      swingProgress: 0,
+      swingId: 0
+    }
+  } satisfies ComponentContext);
 }
 
 describe('hasLineOfSight', () => {
@@ -66,20 +90,20 @@ describe('hasLineOfSight', () => {
   });
 });
 
-describe('ActorEntity.update', () => {
+describe('spawnActor', () => {
   it('moves toward the target when line of sight is clear', () => {
     const world = new TestWorld([
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
     ]);
-    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+    const actor = spawnActor(mockTexture(), 0.5, 0.5, {
       speed: 2,
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
     });
 
-    actor.update(1, { x: 3.5, y: 0.5 }, world);
+    tickActor(actor, 1, { x: 3.5, y: 0.5 }, world);
 
     expect(actor.x).toBeGreaterThan(0.5);
     expect(actor.y).toBeCloseTo(0.5, 5);
@@ -91,14 +115,14 @@ describe('ActorEntity.update', () => {
       [MAP_EMPTY, wall, MAP_EMPTY, MAP_EMPTY],
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
     ]);
-    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+    const actor = spawnActor(mockTexture(), 0.5, 0.5, {
       speed: 2,
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
     });
 
-    actor.update(1, { x: 3.5, y: 0.5 }, world);
+    tickActor(actor, 1, { x: 3.5, y: 0.5 }, world);
 
     expect(actor.x).toBe(0.5);
     expect(actor.y).toBe(0.5);
@@ -111,20 +135,21 @@ describe('ActorEntity.update', () => {
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
     ]);
-    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+    const actor = spawnActor(mockTexture(), 0.5, 0.5, {
       speed: 10,
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
     });
+    const target = { x: 0.5, y: 2.5 };
 
-    actor.update(1, { x: 0.5, y: 2.5 }, world);
+    tickActor(actor, 1, target, world);
 
-    expect(actor.distanceTo({ x: 0.5, y: 2.5 })).toBeCloseTo(
+    expect(distanceBetween(actor, target)).toBeCloseTo(
       CONFIG.contact.stopRadius,
       5
     );
-    expect(actor.inContact).toBe(true);
+    expect(actor.get(ContactSensor)!.inContact).toBe(true);
   });
 
   it('does not move while already in contact', () => {
@@ -133,18 +158,18 @@ describe('ActorEntity.update', () => {
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
     ]);
-    const actor = new ActorEntity(mockTexture(), 0.5, 0.9, {
+    const actor = spawnActor(mockTexture(), 0.5, 0.9, {
       speed: 2,
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
     });
 
-    actor.update(1, { x: 0.5, y: 1 }, world);
+    tickActor(actor, 1, { x: 0.5, y: 1 }, world);
 
     expect(actor.x).toBe(0.5);
     expect(actor.y).toBe(0.9);
-    expect(actor.inContact).toBe(true);
+    expect(actor.get(ContactSensor)!.inContact).toBe(true);
   });
 
   it('registers contact within detect range before reaching stop radius', () => {
@@ -157,30 +182,31 @@ describe('ActorEntity.update', () => {
     const stop = CONFIG.contact.stopRadius;
     const detect = contactDetectRadius();
     const gap = (detect - stop) * 0.5;
-    const actor = new ActorEntity(mockTexture(), 0.5, 1.0 - stop - gap, {
+    const actor = spawnActor(mockTexture(), 0.5, 1.0 - stop - gap, {
       speed: 0,
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
     });
 
-    actor.update(1, target, world);
+    tickActor(actor, 1, target, world);
 
-    expect(actor.distanceTo(target)).toBeGreaterThan(stop);
-    expect(actor.distanceTo(target)).toBeLessThanOrEqual(detect);
-    expect(actor.inContact).toBe(true);
+    expect(distanceBetween(actor, target)).toBeGreaterThan(stop);
+    expect(distanceBetween(actor, target)).toBeLessThanOrEqual(detect);
+    expect(actor.get(ContactSensor)!.inContact).toBe(true);
   });
 
-  it('reports proximity via isNear', () => {
-    const actor = new ActorEntity(mockTexture(), 1, 1, {
+  it('reports proximity via ContactSensor.isNear', () => {
+    const actor = spawnActor(mockTexture(), 1, 1, {
       speed: 1,
       sightRange: 10,
       proximityRadius: 2,
       chaseOnSight: false
     });
+    const sensor = actor.get(ContactSensor)!;
 
-    expect(actor.isNear({ x: 2, y: 1.5 })).toBe(true);
-    expect(actor.isNear({ x: 5, y: 5 })).toBe(false);
+    expect(sensor.isNear({ x: 2, y: 1.5 })).toBe(true);
+    expect(sensor.isNear({ x: 5, y: 5 })).toBe(false);
   });
 
   it('advances animation time while moving', () => {
@@ -188,16 +214,16 @@ describe('ActorEntity.update', () => {
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
     ]);
-    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+    const actor = spawnActor(mockTexture(), 0.5, 0.5, {
       speed: 2,
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
     });
 
-    actor.update(0.5, { x: 3.5, y: 0.5 }, world);
+    tickActor(actor, 0.5, { x: 3.5, y: 0.5 }, world);
 
-    expect(actor.animationTime).toBe(0.5);
+    expect(actor.get(Renderable)!.animationTime).toBe(0.5);
   });
 
   it('scales animation time by animationSpeed', () => {
@@ -205,7 +231,7 @@ describe('ActorEntity.update', () => {
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
     ]);
-    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+    const actor = spawnActor(mockTexture(), 0.5, 0.5, {
       speed: 2,
       sightRange: 10,
       proximityRadius: 1,
@@ -213,9 +239,9 @@ describe('ActorEntity.update', () => {
       animationSpeed: 2
     });
 
-    actor.update(0.5, { x: 3.5, y: 0.5 }, world);
+    tickActor(actor, 0.5, { x: 3.5, y: 0.5 }, world);
 
-    expect(actor.animationTime).toBe(1);
+    expect(actor.get(Renderable)!.animationTime).toBe(1);
   });
 
   it('advances animation time while idle when hover is configured', () => {
@@ -223,7 +249,7 @@ describe('ActorEntity.update', () => {
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
       [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
     ]);
-    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+    const actor = spawnActor(mockTexture(), 0.5, 0.5, {
       speed: 2,
       sightRange: 10,
       proximityRadius: 1,
@@ -231,8 +257,8 @@ describe('ActorEntity.update', () => {
       hover: { frequency: 1, amplitude: 0.05 }
     });
 
-    actor.update(0.5, { x: 3.5, y: 0.5 }, world);
+    tickActor(actor, 0.5, { x: 3.5, y: 0.5 }, world);
 
-    expect(actor.animationTime).toBe(0.5);
+    expect(actor.get(Renderable)!.animationTime).toBe(0.5);
   });
 });

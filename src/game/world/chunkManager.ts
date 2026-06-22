@@ -1,5 +1,6 @@
 import { Block } from '../block';
-import { StaticSprite } from '../entities/sprite';
+import { Entity } from '../entities/entity';
+import { PlayerView, GameWorld } from '../entities/component';
 import { isOpenCell, MapCell } from '../../types';
 import {
   Chunk,
@@ -64,7 +65,7 @@ export class ChunkManager {
     const existing = this.chunks.get(key);
     if (existing) return existing;
 
-    const { chunk, actors } = generateChunk(
+    const { chunk, entities } = generateChunk(
       cx,
       cy,
       this.worldSeed,
@@ -73,7 +74,7 @@ export class ChunkManager {
       spawnExclude
     );
     this.chunks.set(key, chunk);
-    this.entityManager.addChunkActors(cx, cy, actors);
+    this.entityManager.addChunkEntities(cx, cy, entities);
     return chunk;
   }
 
@@ -172,12 +173,44 @@ export class ChunkManager {
     return isOpenCell(this.getCell(wx, wy));
   }
 
-  getStaticSprites(): StaticSprite[] {
-    const sprites: StaticSprite[] = [];
+  getStaticEntities(): Entity[] {
+    const entities: Entity[] = [];
     for (const chunk of this.chunks.values()) {
-      sprites.push(...chunk.sprites);
+      entities.push(...chunk.entities);
     }
-    return sprites;
+    return entities;
+  }
+
+  updateCellEntities(
+    seconds: number,
+    player: PlayerView,
+    world: GameWorld & { deltaTime: number }
+  ): void {
+    const ctx = {
+      dt: seconds,
+      time: world.deltaTime,
+      world,
+      player
+    };
+
+    for (const chunk of this.chunks.values()) {
+      for (const entity of chunk.cellEntities) {
+        entity.update(ctx);
+      }
+    }
+  }
+
+  setCell(wx: number, wy: number, cell: MapCell): void {
+    wx = Math.floor(wx);
+    wy = Math.floor(wy);
+
+    const { chunkSize } = this.recipe.generator;
+    const { cx, cy, lx, ly } = worldToLocal(wx, wy, chunkSize);
+
+    if (!this.isWithinBounds(cx, cy)) return;
+
+    const chunk = this.loadChunk(cx, cy);
+    chunk.cells[localIndex(lx, ly, chunkSize)] = cell;
   }
 
   private carveSpawnPad(cx: number, cy: number, centerLx: number, centerLy: number): void {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONFIG } from '../core/config';
+import { CONFIG } from '../../core/config';
 import { isInStrikeCone, isStrikeActive } from './weaponStrike';
 
 const viewer = { x: 0, y: 0, direction: 0, sheathed: false, swingProgress: 0.5, swingId: 1 };

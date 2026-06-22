@@ -1,16 +1,11 @@
-import { CONFIG } from '../../core/config';
-import { Point } from '../../types';
-import { ActorEntity, ActorEntityConfig, ActorWorld } from './actorEntity';
-import { SpriteSheet } from '../spriteSheet';
-
-/** Mutable position used for knockback displacement. */
-export interface StrikeableHost {
-  x: number;
-  y: number;
-}
+import { CONFIG } from '../../../core/config';
+import { Point } from '../../../types';
+import { Component, ComponentContext } from '../component';
+import { Entity } from '../entity';
 
 /** Weapon-hit response: flash, knockback, and per-swing tracking. */
-export class Strikeable {
+export class Strikeable implements Component {
+  private entity!: Entity;
   private _hitFlashUntil = 0;
   private _lastHitSwing = -1;
   private _knockbackDirX = 0;
@@ -18,7 +13,9 @@ export class Strikeable {
   private _knockbackTotal = 0;
   private _knockbackElapsed = 0;
 
-  constructor(private readonly host: StrikeableHost) {}
+  onAttach(entity: Entity): void {
+    this.entity = entity;
+  }
 
   wasHitBySwing(swingId: number): boolean {
     return this._lastHitSwing === swingId;
@@ -32,8 +29,8 @@ export class Strikeable {
 
   /** Begin a smooth ease-out shove away from a point. */
   applyKnockback(from: Point, distance: number): void {
-    const dx = this.host.x - from.x;
-    const dy = this.host.y - from.y;
+    const dx = this.entity.x - from.x;
+    const dy = this.entity.y - from.y;
     const dist = Math.hypot(dx, dy);
     if (dist < 0.001) return;
 
@@ -53,12 +50,12 @@ export class Strikeable {
     return remaining / CONFIG.weapon.strike.hitFlashDuration;
   }
 
-  update(seconds: number, world: ActorWorld): void {
+  update(ctx: ComponentContext): void {
     if (this._knockbackTotal <= 0) return;
 
     const duration = CONFIG.weapon.strike.knockbackDuration;
     const prevT = Math.min(1, this._knockbackElapsed / duration);
-    this._knockbackElapsed += seconds;
+    this._knockbackElapsed += ctx.dt;
     const t = Math.min(1, this._knockbackElapsed / duration);
     const easeOut = (u: number) => 1 - (1 - u) * (1 - u);
     const step =
@@ -71,22 +68,15 @@ export class Strikeable {
 
     const moveX = this._knockbackDirX * step;
     const moveY = this._knockbackDirY * step;
+    const { world } = ctx;
 
-    if (world.isOpen(this.host.x + moveX, this.host.y)) this.host.x += moveX;
-    if (world.isOpen(this.host.x, this.host.y + moveY)) this.host.y += moveY;
+    if (world.isOpen(this.entity.x + moveX, this.entity.y)) {
+      this.entity.x += moveX;
+    }
+    if (world.isOpen(this.entity.x, this.entity.y + moveY)) {
+      this.entity.y += moveY;
+    }
 
     if (t >= 1) this._knockbackTotal = 0;
   }
-}
-
-/** Hostile actor that can be hit by the player's weapon. */
-export function createStrikeableActor(
-  texture: SpriteSheet,
-  x: number,
-  y: number,
-  config: ActorEntityConfig
-): ActorEntity {
-  const actor = new ActorEntity(texture, x, y, config);
-  actor.attachStrikeable();
-  return actor;
 }

@@ -8,8 +8,18 @@ import { Renderer } from './engine/renderer';
 import { mountStatsOverlay } from './engine/statsOverlay';
 import { Player } from './game/player';
 import { World, loadLevelRecipe } from './game/world';
-import { resolveWeaponStrike } from './game/weaponStrike';
 import weaponMaceImg from './assets/mace_weapon_1.png';
+
+function playerView(player: Player) {
+  return {
+    x: player.x,
+    y: player.y,
+    direction: player.direction,
+    sheathed: player.sheathed,
+    swingProgress: player.swingProgress,
+    swingId: player.swingId
+  };
+}
 
 function getCanvas(): HTMLCanvasElement {
   const display = document.getElementById('display');
@@ -46,7 +56,7 @@ async function main(): Promise<void> {
   loop.start({
     update(dt) {
       world.ensureAround(player.x, player.y);
-      world.update(dt, player.x, player.y);
+      world.update(dt, playerView(player));
       player.update(
         input.states,
         world,
@@ -55,7 +65,7 @@ async function main(): Promise<void> {
         input.consumeAttack(),
         input.consumeSheathToggle()
       );
-      resolveWeaponStrike(player, world.actors, world, world.deltaTime);
+      world.runSystems(playerView(player));
     },
     render() {
       renderer.render(player, world);

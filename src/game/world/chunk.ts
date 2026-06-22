@@ -1,5 +1,5 @@
 import { MapCell } from '../../types';
-import { StaticSprite } from '../entities/sprite';
+import { Entity } from '../entities/entity';
 
 export interface ChunkCoord {
   cx: number;
@@ -42,6 +42,9 @@ export class Chunk {
     public readonly cx: number,
     public readonly cy: number,
     public readonly cells: MapCell[],
-    public readonly sprites: StaticSprite[]
+    /** Static props in this chunk (lamps, etc.). */
+    public readonly entities: Entity[],
+    /** Smart grid cells (hidden doors, etc.). */
+    public readonly cellEntities: Entity[] = []
   ) {}
 }
