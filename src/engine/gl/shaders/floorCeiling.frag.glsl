@@ -1,5 +1,6 @@
 uniform vec2 uResolution;
 uniform float uColumns;
+uniform float uViewScale;
 uniform vec2 uPlayerPos;
 uniform float uDir;
 uniform float uFocal;
@@ -12,7 +13,8 @@ out vec4 outColor;
 
 void main() {
   vec2 frag = gl_FragCoord.xy;
-  float halfH = uResolution.y * 0.5;
+  float horizon = uResolution.y * 0.5;
+  float projScale = uViewScale * 0.5;
 
   float nx = frag.x / uResolution.x;
   float camX = nx - 0.5;
@@ -23,11 +25,11 @@ void main() {
   }
 
   float yTop = uResolution.y - frag.y;
-  bool isFloor = yTop > halfH;
+  bool isFloor = yTop > horizon;
 
   float z = isFloor
-    ? halfH / (yTop - halfH)
-    : halfH / (halfH - yTop);
+    ? projScale / (yTop - horizon)
+    : projScale / (horizon - yTop);
 
   int col = int(clamp(nx * uColumns, 0.0, uColumns - 1.0));
   float zLimit = texelFetch(uZBuffer, ivec2(col, 0), 0).r;

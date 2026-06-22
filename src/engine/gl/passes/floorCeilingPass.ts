@@ -40,6 +40,7 @@ export class FloorCeilingPass implements RenderPass {
     program.use();
     gl.uniform2f(program.uniform('uResolution'), ctx.width, ctx.height);
     gl.uniform1f(program.uniform('uColumns'), ctx.columns);
+    gl.uniform1f(program.uniform('uViewScale'), ctx.viewScale);
     gl.uniform2f(program.uniform('uPlayerPos'), ctx.player.x, ctx.player.y);
     gl.uniform1f(program.uniform('uDir'), ctx.player.direction);
     gl.uniform1f(program.uniform('uFocal'), ctx.focalLength);

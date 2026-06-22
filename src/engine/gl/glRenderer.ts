@@ -14,22 +14,21 @@ import { PostPass } from './passes/postPass';
 
 export class GlRenderer {
   private readonly context: GlContext;
-  private readonly zBuffer: Float32Array;
-  private readonly rayCache: RayStep[][];
+  private zBuffer = new Float32Array(0);
+  private rayCache: RayStep[][] = [];
   private zBufferTex: ReturnType<typeof createZBufferTexture> | null = null;
   private readonly passes: RenderPass[];
-  private spacing = 0;
+  private columns = 0;
   private weaponScale = 0;
+  private frameFocal = 0;
+  private viewScale = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
-    private resolution: number,
     private renderRange: number,
     private focalLength: number
   ) {
     this.context = new GlContext(canvas);
-    this.zBuffer = new Float32Array(resolution);
-    this.rayCache = Array.from({ length: resolution }, () => []);
 
     this.passes = [
       new FloorCeilingPass(),
@@ -45,7 +44,6 @@ export class GlRenderer {
 
   private initPasses(): void {
     const gl = this.context.gl;
-    this.zBufferTex = createZBufferTexture(gl, this.resolution);
     for (const pass of this.passes) {
       pass.init(gl);
     }
@@ -58,23 +56,43 @@ export class GlRenderer {
     for (const pass of this.passes) {
       pass.dispose();
     }
+    this.columns = 0;
+    this.zBufferTex?.dispose();
+    this.zBufferTex = null;
     this.initPasses();
   };
 
   private onResize = (): void => {
     this.context.resize();
-    this.spacing = this.context.width / this.resolution;
-    this.weaponScale =
-      (this.context.width + this.context.height) / CONFIG.weaponScaleDivisor;
+    this.ensureColumnBuffers(this.context.width);
+
+    const { width, height } = this.context;
+    const aspect = width / height;
+    // Horizontal focal follows the aspect ratio so pixels stay square; the
+    // configured focalLength acts as a uniform zoom on both axes.
+    this.frameFocal = 0.5 / (this.focalLength * aspect);
+    this.viewScale = (height * 0.5) / this.focalLength;
+
+    this.weaponScale = (width + height) / CONFIG.weaponScaleDivisor;
     for (const pass of this.passes) {
-      pass.resize(this.context.width, this.context.height);
+      pass.resize(width, height);
     }
   };
+
+  private ensureColumnBuffers(columns: number): void {
+    if (columns === this.columns) return;
+
+    this.columns = columns;
+    this.zBuffer = new Float32Array(columns);
+    this.rayCache = Array.from({ length: columns }, () => []);
+    this.zBufferTex?.dispose();
+    this.zBufferTex = createZBufferTexture(this.context.gl, columns);
+  }
 
   render(player: Player, world: World): void {
     const gl = this.context.gl;
     const zBufferTex = this.zBufferTex;
-    if (!zBufferTex) return;
+    if (!zBufferTex || this.columns === 0) return;
 
     this.raycast(player, world);
 
@@ -90,9 +108,10 @@ export class GlRenderer {
       zBuffer: this.zBuffer,
       zBufferTex,
       rayCache: this.rayCache,
-      columns: this.resolution,
-      spacing: this.spacing,
-      focalLength: this.focalLength,
+      columns: this.columns,
+      spacing: 1,
+      focalLength: this.frameFocal,
+      viewScale: this.viewScale,
       renderRange: this.renderRange,
       weaponScale: this.weaponScale,
       time: world.deltaTime
@@ -106,11 +125,11 @@ export class GlRenderer {
   private raycast(player: Player, world: World): void {
     this.zBuffer.fill(Infinity);
     const dir = player.direction;
-    const res = this.resolution;
+    const res = this.columns;
 
     for (let column = 0; column < res; column++) {
       const camX = column / res - 0.5;
-      const angle = Math.atan2(camX, this.focalLength);
+      const angle = Math.atan2(camX, this.frameFocal);
       const ray = cast(world, player, dir + angle, this.renderRange);
       this.rayCache[column] = ray;
 

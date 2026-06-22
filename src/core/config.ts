@@ -9,8 +9,12 @@ export const CONFIG = {
   walkSpeed: 3,
   /** Radians turned per pixel of horizontal mouse or touch drag. */
   lookSensitivity: 0.0025,
-  focalLength: 0.6,
-  resolution: IS_MOBILE ? 160 : 640,
+  /**
+   * Vertical half-FOV tangent and uniform zoom. The horizontal FOV is derived
+   * from the viewport aspect ratio so on-screen pixels stay square at any size
+   * (larger values widen the view on both axes; 0.5 ~= 53 deg vertical FOV).
+   */
+  focalLength: 0.5,
   renderRange: IS_MOBILE ? 8 : 30,
   canvasScale: 0.5,
   weaponScaleDivisor: 1200,
@@ -34,7 +38,7 @@ export const CONFIG = {
     enemyDensity: 0.015,
     enemyPlayerClearRadius: 4,
     garrisonDensity: 0.002,
-    hunterLichDensity: 0.001,
+    hunterLichDensity: 0.008,
     borderPortalCount: { min: 1, max: 3 }
   },
   actors: {

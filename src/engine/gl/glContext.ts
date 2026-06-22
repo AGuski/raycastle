@@ -29,10 +29,18 @@ export class GlContext {
   };
 
   resize(): void {
-    this.width = Math.floor(window.innerWidth * CONFIG.canvasScale);
-    this.height = Math.floor(window.innerHeight * CONFIG.canvasScale);
+    const displayWidth = window.innerWidth;
+    const displayHeight = window.innerHeight;
+    const invScale = 1 / CONFIG.canvasScale;
+
+    // Integer buffer size so display pixels upscale uniformly (no CSS stretch).
+    this.width = Math.max(1, Math.round(displayWidth / invScale));
+    this.height = Math.max(1, Math.round(displayHeight / invScale));
+
     this.canvas.width = this.width;
     this.canvas.height = this.height;
+    this.canvas.style.width = `${this.width * invScale}px`;
+    this.canvas.style.height = `${this.height * invScale}px`;
     this.gl.viewport(0, 0, this.width, this.height);
   }
 

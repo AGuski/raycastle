@@ -14,7 +14,10 @@ export interface FrameContext {
   rayCache: RayStep[][];
   columns: number;
   spacing: number;
+  /** Horizontal camera focal (aspect-corrected so pixels stay square). */
   focalLength: number;
+  /** Vertical projection scale in pixels (full screen height at zoom 1). */
+  viewScale: number;
   renderRange: number;
   weaponScale: number;
   time: number;

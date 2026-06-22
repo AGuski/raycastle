@@ -7,16 +7,10 @@ export class Renderer {
 
   constructor(
     canvas: HTMLCanvasElement,
-    resolution: number,
     renderRange: number,
     focalLength: number
   ) {
-    this.glRenderer = new GlRenderer(
-      canvas,
-      resolution,
-      renderRange,
-      focalLength
-    );
+    this.glRenderer = new GlRenderer(canvas, renderRange, focalLength);
   }
 
   render(player: Player, map: World): void {

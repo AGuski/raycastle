@@ -31,8 +31,10 @@ interface SpriteStrip {
 const SPRITE_EFFECTS: SpriteEffect[] = ['none', 'darkMiasma'];
 
 export class SpritePass implements RenderPass {
+  private gl: WebGL2RenderingContext | null = null;
   private readonly programs = new Map<SpriteEffect, Program>();
   private batch: QuadBatch | null = null;
+  private batchColumns = 0;
   private readonly fogInvRange =
     1 / (CONFIG.fogEnd - CONFIG.fogStart);
 
@@ -47,21 +49,31 @@ export class SpritePass implements RenderPass {
       this.programs.set(effect, new Program(gl, handle));
     }
 
-    const defaultProgram = this.programs.get('none');
-    if (!defaultProgram) {
+    if (!this.programs.has('none')) {
       throw new Error('Sprite pass missing default program');
     }
 
+    this.gl = gl;
+  }
+
+  resize(width: number, _height: number): void {
+    this.ensureBatch(width);
+  }
+
+  private ensureBatch(columns: number): void {
+    const defaultProgram = this.programs.get('none');
+    if (!this.gl || !defaultProgram || columns === this.batchColumns) return;
+
+    this.batch?.dispose();
     this.batch = new QuadBatch(
-      gl,
-      CONFIG.resolution * 8,
+      this.gl,
+      columns * 8,
       defaultProgram.attrib('aPosition'),
       defaultProgram.attrib('aTexCoord'),
       defaultProgram.attrib('aDepth')
     );
+    this.batchColumns = columns;
   }
-
-  resize(_width: number, _height: number): void {}
 
   render(ctx: FrameContext): void {
     const gl = ctx.gl;
@@ -196,7 +208,7 @@ export class SpritePass implements RenderPass {
 
     const transformX = -dx * sinDir + dy * cosDir;
     const invDepth = 1 / transformY;
-    const spriteHeight = Math.abs(Math.floor(ctx.height * invDepth));
+    const spriteHeight = Math.abs(Math.floor(ctx.viewScale * invDepth));
     const spriteWidth = Math.abs(
       Math.floor(spriteHeight * sprite.texture.aspectRatio)
     );
@@ -284,6 +296,8 @@ export class SpritePass implements RenderPass {
 
   dispose(): void {
     this.batch?.dispose();
+    this.batch = null;
+    this.batchColumns = 0;
     for (const program of this.programs.values()) {
       program.dispose();
     }

@@ -20,7 +20,7 @@ function getCanvas(): HTMLCanvasElement {
 
 async function main(): Promise<void> {
   const assets = new AssetManager();
-  const { textures, focalLength, resolution, renderRange } = CONFIG;
+  const { textures, focalLength, renderRange } = CONFIG;
   const recipe = loadLevelRecipe();
 
   const weapon = assets.createBitmap(
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
 
   const canvas = getCanvas();
   const input = new Input(canvas);
-  const renderer = new Renderer(canvas, resolution, renderRange, focalLength);
+  const renderer = new Renderer(canvas, renderRange, focalLength);
   const stats = mountStatsOverlay();
   const loop = new GameLoop(stats);
 

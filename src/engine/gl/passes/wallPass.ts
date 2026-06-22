@@ -30,9 +30,11 @@ interface WallDraw {
 }
 
 export class WallPass implements RenderPass {
+  private gl: WebGL2RenderingContext | null = null;
   private program: Program | null = null;
   private batch: QuadBatch | null = null;
   private whiteTex: GLTexture | null = null;
+  private batchColumns = 0;
   private readonly fogInvRange =
     1 / (CONFIG.fogEnd - CONFIG.fogStart);
 
@@ -43,18 +45,27 @@ export class WallPass implements RenderPass {
       combineShader(fogGlsl, wallFrag)
     );
     this.program = new Program(gl, handle);
+    this.gl = gl;
+    this.whiteTex = createSolidTexture(gl, [255, 255, 255, 255]);
+  }
+
+  resize(width: number, _height: number): void {
+    this.ensureBatch(width);
+  }
+
+  private ensureBatch(columns: number): void {
+    if (!this.gl || !this.program || columns === this.batchColumns) return;
+
+    this.batch?.dispose();
     this.batch = new QuadBatch(
-      gl,
-      CONFIG.resolution,
+      this.gl,
+      columns,
       this.program.attrib('aPosition'),
       this.program.attrib('aTexCoord'),
       this.program.attrib('aDepth')
     );
-
-    this.whiteTex = createSolidTexture(gl, [255, 255, 255, 255]);
+    this.batchColumns = columns;
   }
-
-  resize(_width: number, _height: number): void {}
 
   render(ctx: FrameContext): void {
     const gl = ctx.gl;
@@ -163,7 +174,8 @@ export class WallPass implements RenderPass {
         step.block.height,
         angle,
         step.distance,
-        ctx.height
+        ctx.height,
+        ctx.viewScale
       );
       const wallZ = this.perpDistance(step.distance, angle);
       const dir = this.wallDirection(step, player);
@@ -253,11 +265,13 @@ export class WallPass implements RenderPass {
     height: number,
     angle: number,
     distance: number,
-    screenHeight: number
+    screenHeight: number,
+    viewScale: number
   ): WallProjection {
     const z = this.perpDistance(distance, angle);
-    const wallHeight = (screenHeight * height) / z;
-    const bottom = (screenHeight / 2) * (1 + 1 / z);
+    const wallHeight = (viewScale * height) / z;
+    const horizon = screenHeight / 2;
+    const bottom = horizon + viewScale / (2 * z);
     return {
       top: bottom - wallHeight,
       height: wallHeight
@@ -266,6 +280,8 @@ export class WallPass implements RenderPass {
 
   dispose(): void {
     this.batch?.dispose();
+    this.batch = null;
+    this.batchColumns = 0;
     this.whiteTex?.dispose();
     this.program?.dispose();
   }
