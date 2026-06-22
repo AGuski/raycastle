@@ -14,8 +14,12 @@ import noiseGlsl from '../shaders/lib/noise.glsl?raw';
 import quadVert from '../shaders/quad.vert.glsl?raw';
 import spriteFrag from '../shaders/sprite.frag.glsl?raw';
 import spriteMiasmaFrag from '../shaders/spriteMiasma.frag.glsl?raw';
+import spriteShadowFrag from '../shaders/spriteShadow.frag.glsl?raw';
+
+type SpriteStripKind = 'shadow' | 'sprite';
 
 interface SpriteStrip {
+  kind: SpriteStripKind;
   left: number;
   top: number;
   width: number;
@@ -33,6 +37,7 @@ const SPRITE_EFFECTS: SpriteEffect[] = ['none', 'darkMiasma'];
 export class SpritePass implements RenderPass {
   private gl: WebGL2RenderingContext | null = null;
   private readonly programs = new Map<SpriteEffect, Program>();
+  private shadowProgram: Program | null = null;
   private batch: QuadBatch | null = null;
   private batchColumns = 0;
   private readonly fogInvRange =
@@ -52,6 +57,13 @@ export class SpritePass implements RenderPass {
     if (!this.programs.has('none')) {
       throw new Error('Sprite pass missing default program');
     }
+
+    const shadowHandle = linkProgram(
+      gl,
+      combineShader(quadVert),
+      combineShader(fogGlsl, spriteShadowFrag)
+    );
+    this.shadowProgram = new Program(gl, shadowHandle);
 
     this.gl = gl;
   }
@@ -90,7 +102,10 @@ export class SpritePass implements RenderPass {
     let index = 0;
     while (index < strips.length) {
       const strip = strips[index];
-      const program = this.programs.get(strip.effect);
+      const isShadow = strip.kind === 'shadow';
+      const program = isShadow
+        ? this.shadowProgram
+        : this.programs.get(strip.effect);
       if (!program) {
         index++;
         continue;
@@ -109,7 +124,17 @@ export class SpritePass implements RenderPass {
       );
       gl.uniform1i(program.uniform('uZBuffer'), 1);
 
-      if (strip.effect === 'darkMiasma') {
+      if (isShadow) {
+        gl.uniform1f(program.uniform('uShadowAlpha'), CONFIG.spriteShadow.alpha);
+        gl.uniform1f(
+          program.uniform('uSampleFrac'),
+          CONFIG.spriteShadow.sampleFrac
+        );
+        gl.uniform1f(
+          program.uniform('uBlurRadius'),
+          CONFIG.spriteShadow.blurRadius
+        );
+      } else if (strip.effect === 'darkMiasma') {
         gl.uniform1f(program.uniform('uTime'), ctx.time);
         gl.uniform1f(program.uniform('uLayerSeed'), 0);
         gl.uniform1f(program.uniform('uSmokeOnly'), 0);
@@ -120,7 +145,8 @@ export class SpritePass implements RenderPass {
       while (
         index < strips.length &&
         strips[index].texture.handle === texture.handle &&
-        strips[index].effect === strip.effect
+        strips[index].kind === strip.kind &&
+        (isShadow || strips[index].effect === strip.effect)
       ) {
         const current = strips[index];
         if (current.quad) {
@@ -157,7 +183,7 @@ export class SpritePass implements RenderPass {
       batch.draw();
 
       // Second miasma layer: offset phase/position, smoke only, blended on top.
-      if (strip.effect === 'darkMiasma') {
+      if (!isShadow && strip.effect === 'darkMiasma') {
         gl.uniform1f(program.uniform('uLayerSeed'), 1);
         gl.uniform1f(program.uniform('uSmokeOnly'), 1);
         batch.draw();
@@ -185,7 +211,11 @@ export class SpritePass implements RenderPass {
       );
     }
 
-    strips.sort((a, b) => b.depth - a.depth);
+    strips.sort((a, b) => {
+      const depthDelta = b.depth - a.depth;
+      if (depthDelta !== 0) return depthDelta;
+      return (a.kind === 'shadow' ? 0 : 1) - (b.kind === 'shadow' ? 0 : 1);
+    });
     return strips;
   }
 
@@ -240,6 +270,13 @@ export class SpritePass implements RenderPass {
     const topB = spriteTop + offsetY;
     const pivotX = screenX * ctx.spacing + offsetX;
     const pivotY = topB + spriteHeight;
+    const shadow = CONFIG.spriteShadow;
+    const shadowHeight = shadow.enabled
+      ? Math.max(1, Math.floor(spriteHeight * shadow.heightFrac))
+      : 0;
+    const shadowOffsetY = shadow.enabled
+      ? spriteHeight * shadow.offsetYFrac
+      : 0;
 
     for (let column = startColumn; column < endColumn; column++) {
       if (!animated && transformY >= ctx.zBuffer[column]) continue;
@@ -255,7 +292,30 @@ export class SpritePass implements RenderPass {
       );
 
       if (!animated) {
+        if (shadowHeight > 0) {
+          strips.push({
+            kind: 'shadow',
+            left: stretchColumn(
+              width,
+              column * ctx.spacing + width * 0.5,
+              shadow.stretch
+            ).left,
+            top: spriteTop + spriteHeight - shadowHeight + shadowOffsetY,
+            width: stretchColumn(
+              width,
+              column * ctx.spacing + width * 0.5,
+              shadow.stretch
+            ).width,
+            height: shadowHeight,
+            texColumn,
+            depth: transformY,
+            texture: tex,
+            effect
+          });
+        }
+
         strips.push({
+          kind: 'sprite',
           left,
           top: spriteTop,
           width,
@@ -273,7 +333,35 @@ export class SpritePass implements RenderPass {
       const yTop = topB;
       const yBot = topB + spriteHeight;
 
+      if (shadowHeight > 0) {
+        const centerX = (x0 + x1) * 0.5;
+        const halfW = ((x1 - x0) * shadow.stretch) * 0.5;
+        const sx0 = centerX - halfW;
+        const sx1 = centerX + halfW;
+        const syTop = pivotY - shadowHeight + shadowOffsetY;
+        const syBot = pivotY + shadowOffsetY;
+
+        strips.push({
+          kind: 'shadow',
+          left,
+          top: spriteTop,
+          width,
+          height: spriteHeight,
+          texColumn,
+          depth: transformY,
+          texture: tex,
+          effect,
+          quad: [
+            ...transformCorner(sx0, syTop, pivotX, pivotY, scale, cos, sin),
+            ...transformCorner(sx1, syTop, pivotX, pivotY, scale, cos, sin),
+            ...transformCorner(sx1, syBot, pivotX, pivotY, scale, cos, sin),
+            ...transformCorner(sx0, syBot, pivotX, pivotY, scale, cos, sin)
+          ] as SpriteStrip['quad']
+        });
+      }
+
       strips.push({
+        kind: 'sprite',
         left,
         top: spriteTop,
         width,
@@ -302,7 +390,19 @@ export class SpritePass implements RenderPass {
       program.dispose();
     }
     this.programs.clear();
+    this.shadowProgram?.dispose();
+    this.shadowProgram = null;
   }
+}
+
+function stretchColumn(
+  width: number,
+  centerX: number,
+  stretch: number
+): { left: number; width: number } {
+  const halfW = (width * stretch) * 0.5;
+  const stretchedLeft = centerX - halfW;
+  return { left: Math.floor(stretchedLeft), width: Math.ceil(halfW * 2) };
 }
 
 function transformCorner(

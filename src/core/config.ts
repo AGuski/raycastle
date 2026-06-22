@@ -25,6 +25,21 @@ export const CONFIG = {
   fogStart: 2,
   fogEnd: 12,
   fogColor: [0, 0, 0] as const,
+  spriteShadow: {
+    enabled: true,
+    /** Peak shadow opacity at the feet. */
+    alpha: 0.45,
+    /** Screen height of the shadow blob as a fraction of sprite height. */
+    heightFrac: 0.15,
+    /** Bottom slice of the sprite texture used as the shadow silhouette. */
+    sampleFrac: 0.35,
+    /** Horizontal stretch applied to the shadow quad. */
+    stretch: 1.35,
+    /** Extra downward offset below the feet, as a fraction of sprite height. */
+    offsetYFrac: 0.08,
+    /** Soft blur radius in source-texture texels. */
+    blurRadius: 40
+  },
   world: {
     infinityMode: true,
     /** Chunk coords included when infinityMode is false (inclusive). */
