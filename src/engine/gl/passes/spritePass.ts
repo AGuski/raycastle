@@ -1,5 +1,6 @@
 import { CONFIG } from '../../../core/config';
 import { Sprite } from '../../../game/entities/sprite';
+import { isIdentityTransform } from '../../../game/entities/spriteAnimator';
 import { Player } from '../../../game/player';
 import { World } from '../../../game/world';
 import { combineShader, linkProgram } from '../glUtils';
@@ -19,6 +20,8 @@ interface SpriteStrip {
   texColumn: number;
   depth: number;
   texture: GLTexture;
+  /** When set, the strip is drawn as a rotated/translated quad (px corners). */
+  quad?: [number, number, number, number, number, number, number, number];
 }
 
 export class SpritePass implements RenderPass {
@@ -77,14 +80,23 @@ export class SpritePass implements RenderPass {
       batch.clear();
       while (index < strips.length && strips[index].texture.handle === texture.handle) {
         const strip = strips[index];
-        batch.pushColumnStrip(
-          strip.left,
-          strip.top,
-          strip.width,
-          strip.height,
-          strip.texColumn,
-          strip.depth
-        );
+        if (strip.quad) {
+          const q = strip.quad;
+          batch.pushColumnStripQuad(
+            q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7],
+            strip.texColumn,
+            strip.depth
+          );
+        } else {
+          batch.pushColumnStrip(
+            strip.left,
+            strip.top,
+            strip.width,
+            strip.height,
+            strip.texColumn,
+            strip.depth
+          );
+        }
         index++;
       }
 
@@ -161,8 +173,24 @@ export class SpritePass implements RenderPass {
     const animTime = sprite.animationTime ?? world.deltaTime;
     const strips: SpriteStrip[] = [];
 
+    const transform = sprite.animator?.transformAt(animTime);
+    const animated = !!transform && !isIdentityTransform(transform);
+
+    // Procedurally-animated sprites are drawn as transformed quads: translate the
+    // billboard, then scale and rotate around the bottom-center ("legs") pivot.
+    // Per-column occlusion is left to the shader's z-test so rotated strips stay
+    // correctly hidden behind walls.
+    const cos = animated ? Math.cos(transform!.rotation) : 1;
+    const sin = animated ? Math.sin(transform!.rotation) : 0;
+    const scale = animated ? transform!.scale : 1;
+    const offsetX = animated ? transform!.translation.x * spriteWidth * ctx.spacing : 0;
+    const offsetY = animated ? -transform!.translation.y * spriteHeight : 0;
+    const topB = spriteTop + offsetY;
+    const pivotX = screenX * ctx.spacing + offsetX;
+    const pivotY = topB + spriteHeight;
+
     for (let column = startColumn; column < endColumn; column++) {
-      if (transformY >= ctx.zBuffer[column]) continue;
+      if (!animated && transformY >= ctx.zBuffer[column]) continue;
 
       const stripe = column - (screenX - spriteWidth / 2);
       const left = Math.floor(column * ctx.spacing);
@@ -174,6 +202,24 @@ export class SpritePass implements RenderPass {
         CONFIG.animationFps
       );
 
+      if (!animated) {
+        strips.push({
+          left,
+          top: spriteTop,
+          width,
+          height: spriteHeight,
+          texColumn,
+          depth: transformY,
+          texture: tex
+        });
+        continue;
+      }
+
+      const x0 = column * ctx.spacing + offsetX;
+      const x1 = x0 + ctx.spacing;
+      const yTop = topB;
+      const yBot = topB + spriteHeight;
+
       strips.push({
         left,
         top: spriteTop,
@@ -181,7 +227,13 @@ export class SpritePass implements RenderPass {
         height: spriteHeight,
         texColumn,
         depth: transformY,
-        texture: tex
+        texture: tex,
+        quad: [
+          ...transformCorner(x0, yTop, pivotX, pivotY, scale, cos, sin),
+          ...transformCorner(x1, yTop, pivotX, pivotY, scale, cos, sin),
+          ...transformCorner(x1, yBot, pivotX, pivotY, scale, cos, sin),
+          ...transformCorner(x0, yBot, pivotX, pivotY, scale, cos, sin)
+        ] as SpriteStrip['quad']
       });
     }
 
@@ -192,4 +244,18 @@ export class SpritePass implements RenderPass {
     this.batch?.dispose();
     this.program?.dispose();
   }
+}
+
+function transformCorner(
+  px: number,
+  py: number,
+  pivotX: number,
+  pivotY: number,
+  scale: number,
+  cos: number,
+  sin: number
+): [number, number] {
+  const dx = (px - pivotX) * scale;
+  const dy = (py - pivotY) * scale;
+  return [pivotX + dx * cos - dy * sin, pivotY + dx * sin + dy * cos];
 }

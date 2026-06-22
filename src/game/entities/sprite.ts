@@ -1,4 +1,5 @@
 import { SpriteSheet } from '../spriteSheet';
+import { SpriteAnimator } from './spriteAnimator';
 
 export interface Sprite {
   texture: SpriteSheet;
@@ -6,6 +7,8 @@ export interface Sprite {
   y: number;
   /** Seconds of animation playback; defaults to world time when omitted. */
   animationTime?: number;
+  /** Optional procedural transform applied to the rendered billboard. */
+  animator?: SpriteAnimator;
 }
 
 export class StaticSprite implements Sprite {

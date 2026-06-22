@@ -11,6 +11,7 @@ export interface DecorationAssets {
   paintings: BlockSide[];
   lampstand: SpriteSheet;
   zombie: SpriteSheet;
+  garrison?: SpriteSheet;
 }
 
 export function createDecoratedBlock(
@@ -137,7 +138,8 @@ export function scatterActors(
   rng: SeededRng,
   assets: DecorationAssets,
   config: ActorEntityConfig,
-  params: ActorScatterParams
+  params: ActorScatterParams,
+  texture: SpriteSheet = assets.zombie
 ): ActorEntity[] {
   return scatterOnOpenCells(
     cells,
@@ -151,6 +153,6 @@ export function scatterActors(
       excludeWy: params.excludeWy,
       clearRadius: params.clearRadius
     },
-    (wx, wy) => new ActorEntity(assets.zombie, wx, wy, config)
+    (wx, wy) => new ActorEntity(texture, wx, wy, config)
   );
 }

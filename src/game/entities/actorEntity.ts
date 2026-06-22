@@ -3,6 +3,11 @@ import { hasLineOfSight } from '../../engine/lineOfSight';
 import { RaycastWorld } from '../../engine/raycaster';
 import { Point } from '../../types';
 import { Sprite } from './sprite';
+import {
+  BounceWalkAnimator,
+  BounceWalkConfig,
+  SpriteAnimator
+} from './spriteAnimator';
 
 export interface ActorEntityConfig {
   speed: number;
@@ -11,6 +16,12 @@ export interface ActorEntityConfig {
   chaseOnSight: boolean;
   /** Multiplier on default animation rate; 1 = normal, <1 slower, >1 faster. */
   animationSpeed?: number;
+  /**
+   * When set, the actor uses a procedural "bounce walk" transform instead of
+   * (or in addition to) a sprite-sheet animation. Useful for single-frame
+   * sprites that have no walk cycle of their own.
+   */
+  bounceWalk?: BounceWalkConfig;
 }
 
 export interface ActorWorld extends RaycastWorld {
@@ -19,13 +30,18 @@ export interface ActorWorld extends RaycastWorld {
 
 export class ActorEntity implements Sprite {
   animationTime = 0;
+  readonly animator?: SpriteAnimator;
 
   constructor(
     public texture: SpriteSheet,
     public x: number,
     public y: number,
     public readonly config: ActorEntityConfig
-  ) {}
+  ) {
+    if (config.bounceWalk) {
+      this.animator = new BounceWalkAnimator(config.bounceWalk);
+    }
+  }
 
   distanceTo(point: Point): number {
     return Math.hypot(point.x - this.x, point.y - this.y);

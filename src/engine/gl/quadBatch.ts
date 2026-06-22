@@ -87,6 +87,39 @@ export class QuadBatch {
     this.pushQuad(x, y, w, h, u, 1, u, 0, depth);
   }
 
+  /**
+   * Single texture column drawn as an arbitrarily-positioned quad. Corners are
+   * given in screen pixels (top-left, top-right, bottom-right, bottom-left),
+   * letting the caller apply rotation/translation per strip. The column texel
+   * (`u`) is constant; V runs 1 at the top corners to 0 at the bottom corners to
+   * match {@link pushColumnStrip}.
+   */
+  pushColumnStripQuad(
+    tlX: number,
+    tlY: number,
+    trX: number,
+    trY: number,
+    brX: number,
+    brY: number,
+    blX: number,
+    blY: number,
+    u: number,
+    depth: number
+  ): void {
+    const offset = this.vertexCount * FLOATS_PER_VERTEX;
+    const d = this.data;
+
+    d.set(
+      [tlX, tlY, u, 1, depth, trX, trY, u, 1, depth, brX, brY, u, 0, depth],
+      offset
+    );
+    d.set(
+      [tlX, tlY, u, 1, depth, brX, brY, u, 0, depth, blX, blY, u, 0, depth],
+      offset + 15
+    );
+    this.vertexCount += 6;
+  }
+
   upload(): void {
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);

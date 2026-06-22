@@ -10,6 +10,7 @@ export interface GeneratorParams {
   lampPlayerClearRadius: number;
   enemyDensity: number;
   enemyPlayerClearRadius: number;
+  garrisonDensity: number;
   borderPortalCount: { min: number; max: number };
 }
 
@@ -45,6 +46,7 @@ export function defaultGeneratorParams(): GeneratorParams {
     lampPlayerClearRadius: world.lampPlayerClearRadius,
     enemyDensity: world.enemyDensity,
     enemyPlayerClearRadius: world.enemyPlayerClearRadius,
+    garrisonDensity: world.garrisonDensity,
     borderPortalCount: { ...world.borderPortalCount }
   };
 }

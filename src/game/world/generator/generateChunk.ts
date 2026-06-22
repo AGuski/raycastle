@@ -31,6 +31,7 @@ export function generateChunk(
     lampPlayerClearRadius,
     enemyDensity,
     enemyPlayerClearRadius,
+    garrisonDensity,
     borderPortalCount
   } = params;
 
@@ -70,6 +71,26 @@ export function generateChunk(
       ...scatterExclude
     }
   );
+
+  if (assets.garrison) {
+    actors.push(
+      ...scatterActors(
+        cells,
+        chunkSize,
+        cx,
+        cy,
+        rng.fork(0x6a55),
+        assets,
+        CONFIG.actors.garrison,
+        {
+          enemyDensity: garrisonDensity,
+          clearRadius: enemyPlayerClearRadius,
+          ...scatterExclude
+        },
+        assets.garrison
+      )
+    );
+  }
 
   return {
     chunk: new Chunk(cx, cy, cells, sprites),
