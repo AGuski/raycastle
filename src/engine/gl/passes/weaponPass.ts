@@ -1,3 +1,4 @@
+import { CONFIG } from '../../../core/config';
 import { combineShader, linkProgram } from '../glUtils';
 import { getBitmapTexture } from '../glTexture';
 import { Program } from '../program';
@@ -34,13 +35,18 @@ export class WeaponPass implements RenderPass {
     const batch = this.batch;
     if (!program || !batch) return;
 
-    const bobX = Math.cos(ctx.player.paces * 2) * ctx.weaponScale * 6;
-    const bobY = Math.sin(ctx.player.paces * 4) * ctx.weaponScale * 6;
+    const { position, pivot, rotation, scale, bobAmplitude } = CONFIG.weapon;
+    const bobScale = ctx.weaponScale * bobAmplitude;
+    const bobX = Math.cos(ctx.player.paces * 2) * bobScale;
+    const bobY = Math.sin(ctx.player.paces * 4) * bobScale;
     const weapon = ctx.player.weapon;
-    const left = ctx.width * 0.66 + bobX;
-    const top = ctx.height * 0.6 + bobY;
-    const w = weapon.width * ctx.weaponScale;
-    const h = weapon.height * ctx.weaponScale;
+    const sizeScale = ctx.weaponScale * scale;
+    const w = weapon.width * sizeScale;
+    const h = weapon.height * sizeScale;
+    const pivotX = ctx.width * position.x + bobX;
+    const pivotY = ctx.height * position.y + bobY;
+    const left = pivotX - w * pivot.x;
+    const top = pivotY - h * pivot.y;
 
     program.use();
     gl.uniform2f(program.uniform('uResolution'), ctx.width, ctx.height);
@@ -53,7 +59,18 @@ export class WeaponPass implements RenderPass {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     batch.clear();
-    batch.pushQuadScreen(left, top, w, h, 0, 1, 0);
+    batch.pushQuadScreenAtPivot(
+      left,
+      top,
+      w,
+      h,
+      pivot.x,
+      pivot.y,
+      rotation,
+      0,
+      1,
+      0
+    );
     batch.upload();
     batch.bind();
     batch.draw();

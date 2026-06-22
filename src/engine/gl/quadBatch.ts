@@ -75,6 +75,53 @@ export class QuadBatch {
     this.pushQuad(x, y, w, h, u0, 1, u1, 0, depth);
   }
 
+  /**
+   * Textured screen quad rotated around a pivot on the unrotated rectangle.
+   * Pivot fractions (0–1) are relative to the top-left placement.
+   */
+  pushQuadScreenAtPivot(
+    left: number,
+    top: number,
+    w: number,
+    h: number,
+    pivotFracX: number,
+    pivotFracY: number,
+    rotation: number,
+    u0: number,
+    u1: number,
+    depth: number
+  ): void {
+    const pivotX = left + w * pivotFracX;
+    const pivotY = top + h * pivotFracY;
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+
+    const rotate = (x: number, y: number, u: number, v: number): number[] => {
+      const dx = x - pivotX;
+      const dy = y - pivotY;
+      return [
+        pivotX + dx * cos - dy * sin,
+        pivotY + dx * sin + dy * cos,
+        u,
+        v,
+        depth
+      ];
+    };
+
+    const right = left + w;
+    const bottom = top + h;
+    const tl = rotate(left, top, u0, 1);
+    const tr = rotate(right, top, u1, 1);
+    const br = rotate(right, bottom, u1, 0);
+    const bl = rotate(left, bottom, u0, 0);
+
+    const offset = this.vertexCount * FLOATS_PER_VERTEX;
+    const d = this.data;
+    d.set([...tl, ...tr, ...br], offset);
+    d.set([...tl, ...br, ...bl], offset + 15);
+    this.vertexCount += 6;
+  }
+
   /** Single texture column stretched horizontally (matches Canvas 2D column strips). */
   pushColumnStrip(
     x: number,

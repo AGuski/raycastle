@@ -18,6 +18,19 @@ export const CONFIG = {
   renderRange: IS_MOBILE ? 8 : 30,
   canvasScale: 0.5,
   weaponScaleDivisor: 1200,
+  /** First-person held weapon placement (screen space, 0–1). */
+  weapon: {
+    /** Pivot point on screen; walk bob is applied here. */
+    position: { x: 1.1, y: 1.3 },
+    /** Pivot within the sprite quad (0–1). Bottom-right suits the mace grip. */
+    pivot: { x: 1, y: 1 },
+    /** Rotation in radians around the pivot (screen Y-down). */
+    rotation: 0,
+    /** Sprite size multiplier applied on top of viewport weaponScale. */
+    scale: 0.5,
+    /** Bob amplitude multiplier; scaled by weaponScale each frame. */
+    bobAmplitude: 6
+  },
   fixedTimestep: 1 / 60,
   maxFrameDelta: 0.2,
   debugKey: 'F3',
@@ -96,7 +109,7 @@ export const CONFIG = {
     wallPainting: { width: 1024, height: 1024 },
     wallControls: { width: 1024, height: 1024 },
     skybox: { width: 4096, height: 1024 },
-    weapon: { width: 1200, height: 950 },
+    weapon: { width: 1024, height: 1024 },
     lampstand: { width: 1024, height: 1024 },
     zombie: { width: 3072, height: 512, frames: 6 },
     garrison: { width: 1024, height: 1024 },

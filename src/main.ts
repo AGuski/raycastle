@@ -8,7 +8,7 @@ import { Renderer } from './engine/renderer';
 import { mountStatsOverlay } from './engine/statsOverlay';
 import { Player } from './game/player';
 import { World, loadLevelRecipe } from './game/world';
-import weaponKnifeImg from './assets/weapon_knife.png';
+import weaponMaceImg from './assets/mace_weapon_1_small.png';
 
 function getCanvas(): HTMLCanvasElement {
   const display = document.getElementById('display');
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   const recipe = loadLevelRecipe();
 
   const weapon = assets.createBitmap(
-    weaponKnifeImg,
+    weaponMaceImg,
     textures.weapon.width,
     textures.weapon.height
   );
