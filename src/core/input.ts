@@ -23,9 +23,13 @@ export class Input {
   private lookTouchId: number | null = null;
   private lastLookX = 0;
 
+  private attackQueued = false;
+  private sheathToggleQueued = false;
+
   constructor(private canvas: HTMLCanvasElement) {
     document.addEventListener('keydown', this.onKeyDown.bind(this), false);
     document.addEventListener('keyup', this.onKeyUp.bind(this), false);
+    document.addEventListener('mousedown', this.onMouseDown.bind(this), false);
     document.addEventListener('mousemove', this.onMouseMove.bind(this), false);
     document.addEventListener('touchstart', this.onTouch.bind(this), false);
     document.addEventListener('touchmove', this.onTouch.bind(this), false);
@@ -39,6 +43,24 @@ export class Input {
     const delta = this.turnDelta;
     this.turnDelta = 0;
     return delta;
+  }
+
+  consumeAttack(): boolean {
+    const attack = this.attackQueued;
+    this.attackQueued = false;
+    return attack;
+  }
+
+  consumeSheathToggle(): boolean {
+    const toggle = this.sheathToggleQueued;
+    this.sheathToggleQueued = false;
+    return toggle;
+  }
+
+  private onMouseDown(e: MouseEvent): void {
+    if (document.pointerLockElement !== this.canvas || e.button !== 0) return;
+    this.attackQueued = true;
+    e.preventDefault();
   }
 
   private onCanvasClick(): void {
@@ -116,6 +138,18 @@ export class Input {
 
     if (e.code === CONFIG.debugKey) {
       toggleDebug();
+      e.preventDefault();
+      return;
+    }
+
+    if (e.code === 'Space' && !e.repeat) {
+      this.attackQueued = true;
+      e.preventDefault();
+      return;
+    }
+
+    if (e.code === 'KeyQ' && !e.repeat) {
+      this.sheathToggleQueued = true;
       e.preventDefault();
       return;
     }

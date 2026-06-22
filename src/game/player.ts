@@ -6,9 +6,21 @@ import { World } from './world/index';
 export class Player {
   readonly weapon: Bitmap;
   private _paces = 0;
+  private _swingTime = 0;
+  private _sheathed = false;
 
   get paces(): number {
     return this._paces;
+  }
+
+  get sheathed(): boolean {
+    return this._sheathed;
+  }
+
+  /** 0 when idle; 0–1 while a swing is playing. */
+  get swingProgress(): number {
+    if (this._swingTime <= 0) return 0;
+    return Math.min(1, this._swingTime / CONFIG.weapon.swing.duration);
   }
 
   constructor(
@@ -35,9 +47,28 @@ export class Player {
     controls: ControlStates,
     map: World,
     seconds: number,
-    turnDelta = 0
+    turnDelta = 0,
+    attack = false,
+    sheathToggle = false
   ): void {
     if (turnDelta !== 0) this.rotate(turnDelta);
+
+    if (sheathToggle) {
+      this._sheathed = !this._sheathed;
+      if (this._sheathed) {
+        this._swingTime = 0;
+      }
+    }
+
+    if (attack && !this._sheathed && this._swingTime <= 0) {
+      this._swingTime = Number.EPSILON;
+    }
+    if (this._swingTime > 0) {
+      this._swingTime += seconds;
+      if (this._swingTime >= CONFIG.weapon.swing.duration) {
+        this._swingTime = 0;
+      }
+    }
 
     let forward = 0;
     if (controls.forward) forward += 1;

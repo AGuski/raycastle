@@ -27,9 +27,22 @@ export const CONFIG = {
     /** Rotation in radians around the pivot (screen Y-down). */
     rotation: 0,
     /** Sprite size multiplier applied on top of viewport weaponScale. */
-    scale: 0.5,
+    scale: 0.6,
     /** Bob amplitude multiplier; scaled by weaponScale each frame. */
-    bobAmplitude: 6
+    bobAmplitude: 6,
+    swing: {
+      duration: 0.35,
+      /** Wind-up: raised and slightly clockwise. */
+      start: {
+        rotation: 0.5,
+        translation: { x: 0, y: 0.08 }
+      },
+      /** Follow-through: dropped and ~90° anticlockwise from the wind-up. */
+      end: {
+        rotation: 0 - Math.PI / 2,
+        translation: { x: -0.5, y: -0.1 }
+      }
+    }
   },
   fixedTimestep: 1 / 60,
   maxFrameDelta: 0.2,

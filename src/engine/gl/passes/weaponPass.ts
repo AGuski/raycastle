@@ -1,4 +1,5 @@
 import { CONFIG } from '../../../core/config';
+import { swingTransformAt } from '../../../game/weaponSwing';
 import { combineShader, linkProgram } from '../glUtils';
 import { getBitmapTexture } from '../glTexture';
 import { Program } from '../program';
@@ -33,7 +34,7 @@ export class WeaponPass implements RenderPass {
     const gl = ctx.gl;
     const program = this.program;
     const batch = this.batch;
-    if (!program || !batch) return;
+    if (!program || !batch || ctx.player.sheathed) return;
 
     const { position, pivot, rotation, scale, bobAmplitude } = CONFIG.weapon;
     const bobScale = ctx.weaponScale * bobAmplitude;
@@ -43,8 +44,13 @@ export class WeaponPass implements RenderPass {
     const sizeScale = ctx.weaponScale * scale;
     const w = weapon.width * sizeScale;
     const h = weapon.height * sizeScale;
-    const pivotX = ctx.width * position.x + bobX;
-    const pivotY = ctx.height * position.y + bobY;
+    const swing = ctx.player.swingProgress;
+    const swingPose = swing > 0 ? swingTransformAt(swing) : null;
+    const swingRotation = rotation + (swingPose?.rotation ?? 0);
+    const swingOffsetX = (swingPose?.translation.x ?? 0) * w;
+    const swingOffsetY = (swingPose?.translation.y ?? 0) * h;
+    const pivotX = ctx.width * position.x + bobX + swingOffsetX;
+    const pivotY = ctx.height * position.y + bobY - swingOffsetY;
     const left = pivotX - w * pivot.x;
     const top = pivotY - h * pivot.y;
 
@@ -66,7 +72,7 @@ export class WeaponPass implements RenderPass {
       h,
       pivot.x,
       pivot.y,
-      rotation,
+      swingRotation,
       0,
       1,
       0

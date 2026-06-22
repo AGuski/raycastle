@@ -8,7 +8,7 @@ import { Renderer } from './engine/renderer';
 import { mountStatsOverlay } from './engine/statsOverlay';
 import { Player } from './game/player';
 import { World, loadLevelRecipe } from './game/world';
-import weaponMaceImg from './assets/mace_weapon_1_small.png';
+import weaponMaceImg from './assets/mace_weapon_1.png';
 
 function getCanvas(): HTMLCanvasElement {
   const display = document.getElementById('display');
@@ -46,7 +46,14 @@ async function main(): Promise<void> {
     update(dt) {
       world.ensureAround(player.x, player.y);
       world.update(dt, player.x, player.y);
-      player.update(input.states, world, dt, input.consumeTurnDelta());
+      player.update(
+        input.states,
+        world,
+        dt,
+        input.consumeTurnDelta(),
+        input.consumeAttack(),
+        input.consumeSheathToggle()
+      );
     },
     render() {
       renderer.render(player, world);
