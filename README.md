@@ -1,24 +1,28 @@
 # Ray Castle
 
-A browser-based ray casting engine playground — a Wolfenstein-style first-person renderer built with TypeScript and HTML Canvas.
+A browser-based first-person ray casting game built with TypeScript, WebGL2, and GLSL.
 
-Inspired by [A first-person engine in 265 lines](http://www.playfuljs.com/a-first-person-engine-in-265-lines/) by PlayfulJS.
+The engine is a hybrid: classic CPU ray casting drives visibility and depth (DDA grid traversal, per-column z-buffer), while WebGL2 fragment shaders draw walls, floors, ceilings, sprites, and post effects from that ray data. Inspired by [A first-person engine in 265 lines](http://www.playfuljs.com/a-first-person-engine-in-265-lines/) by PlayfulJS.
 
 **Live demo:** [raycastle.vercel.app](https://raycastle.vercel.app/)
 
 ## Features
 
-- Real-time ray casting with textured walls and animated surfaces
-- Sprites placed in the world
-- Keyboard and touch controls
+- Hybrid ray casting + GLSL shader renderer (WebGL2)
+- Procedurally generated infinite world with chunk streaming
+- Textured walls, animated surfaces, skybox, and fog
+- Sprites with animation and shader effects (e.g. dark miasma)
+- AI actors with line-of-sight behavior
+- Pointer-lock mouse look and touch controls
 - FPS overlay via [stats.js](https://github.com/mrdoob/stats.js/)
 
 ## Tech stack
 
 - TypeScript 6
 - Vite 7
+- WebGL2 + GLSL shaders
 - ESLint (typescript-eslint)
-- HTML Canvas 2D
+- Vitest
 
 ## Prerequisites
 
@@ -50,38 +54,57 @@ Open [http://localhost:4200](http://localhost:4200) in your browser.
 | `npm run preview` | Preview the production build locally |
 | `npm run typecheck` | Run the TypeScript compiler without emitting files |
 | `npm run lint` | Run ESLint on `src/` |
+| `npm test` | Run tests with Vitest |
 
 ## Controls
 
+### Desktop
+
 | Input | Action |
 | --- | --- |
-| Arrow keys / WASD | Move and turn |
+| Click canvas | Capture pointer (required for mouse look) |
+| Mouse move | Look left / right |
+| W / S or ↑ / ↓ | Move forward / backward |
+| A / D or ← / → | Strafe left / right |
 | F3 | Toggle debug overlay |
-| Touch (mobile) | Tap upper half to move forward; left/right halves to turn |
+
+### Touch (mobile)
+
+| Input | Action |
+| --- | --- |
+| Right half of screen | Drag to look |
+| Upper left | Move forward |
+| Lower left | Strafe left |
+| Lower right | Strafe right |
 
 ## Project structure
 
 ```
 src/
-  main.ts           Bootstrap: wire systems and start the game loop
-  types.ts          Shared TypeScript types
+  main.ts              Bootstrap: wire systems and start the game loop
+  types.ts             Shared TypeScript types
   core/
-    config.ts       Game constants (speed, FOV, resolution, etc.)
-    debug.ts        Debug overlay toggle state
-    input.ts        Keyboard and touch controls
+    config.ts          Game constants (speed, FOV, resolution, etc.)
+    debug.ts           Debug overlay toggle state
+    input.ts           Keyboard, pointer-lock, and touch controls
   engine/
-    assets.ts       Bitmap factory and image preloading
-    raycaster.ts    Ray casting math
-    renderer.ts     Canvas rendering (walls, sprites, sky)
-    gameLoop.ts     requestAnimationFrame loop
-    statsOverlay.ts FPS overlay setup
+    assets.ts          Bitmap factory and image preloading
+    raycaster.ts       DDA ray casting math
+    lineOfSight.ts     Visibility queries for AI
+    renderer.ts        Thin wrapper over the GL renderer
+    gameLoop.ts        requestAnimationFrame loop
+    statsOverlay.ts    FPS overlay setup
+    gl/
+      glRenderer.ts    Ray cast + multi-pass WebGL2 pipeline
+      passes/          Floor/ceiling, walls, sprites, weapon, post
+      shaders/         GLSL vertex and fragment shaders
   game/
-    block.ts        Wall textures and block definitions
-    world.ts        Map data, sprites, and world queries
-    player.ts       Player movement and state
-    entities/
-      sprite.ts     Sprite entities
-  assets/           Texture images
+    block.ts           Wall textures and block definitions
+    player.ts          Player movement and state
+    spriteSheet.ts     Sprite sheet frame helpers
+    world/             Chunk streaming, procedural generation, entities
+    entities/          Sprites, animators, and AI actors
+  assets/              Texture images
 ```
 
 ## License
