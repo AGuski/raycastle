@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { CONFIG } from '../../core/config';
+import { contactDetectRadius } from '../contact';
 import { Block } from '../block';
 import { ActorEntity } from '../entities/actorEntity';
 import { spriteSheet } from '../spriteSheet';
@@ -100,6 +102,73 @@ describe('ActorEntity.update', () => {
 
     expect(actor.x).toBe(0.5);
     expect(actor.y).toBe(0.5);
+  });
+
+  it('stops at contact range instead of reaching the target', () => {
+    const world = new TestWorld([
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
+    ]);
+    const actor = new ActorEntity(mockTexture(), 0.5, 0.5, {
+      speed: 10,
+      sightRange: 10,
+      proximityRadius: 1,
+      chaseOnSight: true
+    });
+
+    actor.update(1, { x: 0.5, y: 2.5 }, world);
+
+    expect(actor.distanceTo({ x: 0.5, y: 2.5 })).toBeCloseTo(
+      CONFIG.contact.stopRadius,
+      5
+    );
+    expect(actor.inContact).toBe(true);
+  });
+
+  it('does not move while already in contact', () => {
+    const world = new TestWorld([
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
+    ]);
+    const actor = new ActorEntity(mockTexture(), 0.5, 0.9, {
+      speed: 2,
+      sightRange: 10,
+      proximityRadius: 1,
+      chaseOnSight: true
+    });
+
+    actor.update(1, { x: 0.5, y: 1 }, world);
+
+    expect(actor.x).toBe(0.5);
+    expect(actor.y).toBe(0.9);
+    expect(actor.inContact).toBe(true);
+  });
+
+  it('registers contact within detect range before reaching stop radius', () => {
+    const world = new TestWorld([
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
+    ]);
+    const target = { x: 0.5, y: 1.0 };
+    const stop = CONFIG.contact.stopRadius;
+    const detect = contactDetectRadius();
+    const gap = (detect - stop) * 0.5;
+    const actor = new ActorEntity(mockTexture(), 0.5, 1.0 - stop - gap, {
+      speed: 0,
+      sightRange: 10,
+      proximityRadius: 1,
+      chaseOnSight: true
+    });
+
+    actor.update(1, target, world);
+
+    expect(actor.distanceTo(target)).toBeGreaterThan(stop);
+    expect(actor.distanceTo(target)).toBeLessThanOrEqual(detect);
+    expect(actor.inContact).toBe(true);
   });
 
   it('reports proximity via isNear', () => {

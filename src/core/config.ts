@@ -7,6 +7,13 @@ export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(
 export const CONFIG = {
   playerStart: { x: 0.5, y: 0.5, direction: Math.PI * 0.3 },
   walkSpeed: 3,
+  /** Player contact sensor; detect radius is stopRadius + detectMargin. */
+  contact: {
+    /** Chase movement halts when closer than this (world units). */
+    stopRadius: 0.3,
+    /** Extra reach for the touch sensor beyond stopRadius. */
+    detectMargin: 0.05
+  },
   /** Radians turned per pixel of horizontal mouse or touch drag. */
   lookSensitivity: 0.0025,
   /**

@@ -15,7 +15,14 @@ export class EntityManager {
 
   update(seconds: number, target: Point, world: ActorWorld): void {
     for (const actor of this.actors) {
+      const wasInContact = actor.inContact;
       actor.update(seconds, target, world);
+      if (actor.inContact && !wasInContact) {
+        console.log('[contact] actor touching player', {
+          x: actor.x,
+          y: actor.y
+        });
+      }
     }
   }
 }

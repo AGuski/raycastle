@@ -1,6 +1,8 @@
 import { SpriteSheet } from '../spriteSheet';
+import { CONFIG } from '../../core/config';
 import { hasLineOfSight } from '../../engine/lineOfSight';
 import { RaycastWorld } from '../../engine/raycaster';
+import { isInContact, contactDetectRadius } from '../contact';
 import { Point } from '../../types';
 import { Sprite } from './sprite';
 import { SpriteEffect } from './spriteEffect';
@@ -42,6 +44,12 @@ export class ActorEntity implements Sprite {
   animationTime = 0;
   readonly animator?: SpriteAnimator;
   readonly effect?: SpriteEffect;
+  private _inContact = false;
+
+  /** Whether this actor is currently touching the player. */
+  get inContact(): boolean {
+    return this._inContact;
+  }
 
   constructor(
     public texture: SpriteSheet,
@@ -65,14 +73,23 @@ export class ActorEntity implements Sprite {
     return this.distanceTo(point) <= this.config.proximityRadius;
   }
 
+  isInContactWith(point: Point, radius = contactDetectRadius()): boolean {
+    return isInContact(this, point, radius);
+  }
+
   update(seconds: number, target: Point, world: ActorWorld): void {
     const prevX = this.x;
     const prevY = this.y;
+    const stopRadius = CONFIG.contact.stopRadius;
 
     if (this.config.chaseOnSight) {
       const dist = this.distanceTo(target);
-      if (dist <= this.config.sightRange && hasLineOfSight(world, this, target) && dist >= 0.001) {
-        const step = this.config.speed * seconds;
+      if (
+        dist > stopRadius &&
+        dist <= this.config.sightRange &&
+        hasLineOfSight(world, this, target)
+      ) {
+        const step = Math.min(this.config.speed * seconds, dist - stopRadius);
         const moveX = ((target.x - this.x) / dist) * step;
         const moveY = ((target.y - this.y) / dist) * step;
 
@@ -80,6 +97,8 @@ export class ActorEntity implements Sprite {
         if (world.isOpen(this.x, this.y + moveY)) this.y += moveY;
       }
     }
+
+    this._inContact = this.isInContactWith(target);
 
     if (this.x !== prevX || this.y !== prevY || this.config.hover) {
       this.animationTime += seconds * (this.config.animationSpeed ?? 1);
