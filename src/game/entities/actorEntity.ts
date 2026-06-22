@@ -6,6 +6,7 @@ import { isInContact, contactDetectRadius } from '../contact';
 import { Point } from '../../types';
 import { Sprite } from './sprite';
 import { SpriteEffect } from './spriteEffect';
+import { Strikeable } from './strikeable';
 import {
   BounceWalkAnimator,
   BounceWalkConfig,
@@ -44,6 +45,7 @@ export class ActorEntity implements Sprite {
   animationTime = 0;
   readonly animator?: SpriteAnimator;
   readonly effect?: SpriteEffect;
+  strikeable?: Strikeable;
   private _inContact = false;
 
   /** Whether this actor is currently touching the player. */
@@ -65,6 +67,12 @@ export class ActorEntity implements Sprite {
     }
   }
 
+  /** Adds weapon-hit response (flash, knockback). Safe to call once at spawn. */
+  attachStrikeable(): Strikeable {
+    this.strikeable = new Strikeable(this);
+    return this.strikeable;
+  }
+
   distanceTo(point: Point): number {
     return Math.hypot(point.x - this.x, point.y - this.y);
   }
@@ -77,12 +85,19 @@ export class ActorEntity implements Sprite {
     return isInContact(this, point, radius);
   }
 
+  getHitFlash(time: number): number {
+    return this.strikeable?.getHitFlash(time) ?? 0;
+  }
+
   update(seconds: number, target: Point, world: ActorWorld): void {
     const prevX = this.x;
     const prevY = this.y;
     const stopRadius = CONFIG.contact.stopRadius;
+    const isKnockedBack = this.strikeable?.isKnockedBack() ?? false;
 
-    if (this.config.chaseOnSight) {
+    this.strikeable?.update(seconds, world);
+
+    if (!isKnockedBack && this.config.chaseOnSight) {
       const dist = this.distanceTo(target);
       if (
         dist > stopRadius &&

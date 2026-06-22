@@ -155,5 +155,5 @@ void main() {
   }
 
   float outAlpha = clamp(max(bodyAlpha, smoke * 0.95), 0.0, 1.0);
-  outColor = vec4(applyFog(color, vDepth), outAlpha);
+  outColor = vec4(applyFog(applyHitFlash(color, uHitFlash), vDepth), outAlpha);
 }

@@ -27,5 +27,5 @@ void main() {
     discard;
   }
 
-  outColor = vec4(applyFog(tex.rgb, vDepth), tex.a);
+  outColor = vec4(applyFog(applyHitFlash(tex.rgb, uHitFlash), vDepth), tex.a);
 }

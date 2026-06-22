@@ -1,6 +1,7 @@
 import { CONFIG } from '../../core/config';
 import { AssetManager } from '../../engine/assets';
 import { Bitmap, Block, BlockSide, BlockSides } from '../block';
+import { ActorEntity } from '../entities/actorEntity';
 import { Sprite } from '../entities/sprite';
 import { spriteSheet, SpriteSheet } from '../spriteSheet';
 import { isOpenCell, MapCell } from '../../types';
@@ -163,6 +164,10 @@ export class World {
 
   get sprites(): Sprite[] {
     return [...this.chunkManager.getStaticSprites(), ...this.entityManager.actors];
+  }
+
+  get actors(): readonly ActorEntity[] {
+    return this.entityManager.actors;
   }
 
   getBitmaps(): Bitmap[] {

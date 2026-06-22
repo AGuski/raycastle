@@ -49,6 +49,21 @@ export const CONFIG = {
         rotation: 0 - Math.PI / 2,
         translation: { x: -0.5, y: -0.1 }
       }
+    },
+    strike: {
+      /** Max forward reach along the view center (world units). */
+      range: 0.75,
+      /** Half-angle of the strike cone in radians. */
+      halfAngle: 0.45,
+      /** Swing progress window where hits are checked (0–1). */
+      activeStart: 0.2,
+      activeEnd: 0.75,
+      /** Seconds the hit flash stays visible. */
+      hitFlashDuration: 0.25,
+      /** How far actors are shoved away from the player on hit (world units). */
+      knockbackDistance: 0.5,
+      /** Seconds over which knockback distance is applied (ease-out). */
+      knockbackDuration: 0.12
     }
   },
   fixedTimestep: 1 / 60,

@@ -1,5 +1,6 @@
 import { Block, BlockSide, BlockSides } from '../../block';
 import { ActorEntity, ActorEntityConfig } from '../../entities/actorEntity';
+import { createStrikeableActor } from '../../entities/strikeable';
 import { StaticSprite } from '../../entities/sprite';
 import { SpriteSheet } from '../../spriteSheet';
 import { MAP_EMPTY, MapCell } from '../../../types';
@@ -154,6 +155,6 @@ export function scatterActors(
       excludeWy: params.excludeWy,
       clearRadius: params.clearRadius
     },
-    (wx, wy) => new ActorEntity(texture, wx, wy, config)
+    (wx, wy) => createStrikeableActor(texture, wx, wy, config)
   );
 }

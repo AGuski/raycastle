@@ -12,6 +12,8 @@ export interface Sprite {
   animator?: SpriteAnimator;
   /** Fragment shader variant for this sprite; defaults to the standard pass. */
   effect?: SpriteEffect;
+  /** 0–1 red flash for recent weapon hits; omit when not applicable. */
+  getHitFlash?(time: number): number;
 }
 
 export class StaticSprite implements Sprite {

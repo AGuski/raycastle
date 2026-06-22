@@ -7,6 +7,7 @@ export class Player {
   readonly weapon: Bitmap;
   private _paces = 0;
   private _swingTime = 0;
+  private _swingId = 0;
   private _sheathed = false;
 
   get paces(): number {
@@ -21,6 +22,11 @@ export class Player {
   get swingProgress(): number {
     if (this._swingTime <= 0) return 0;
     return Math.min(1, this._swingTime / CONFIG.weapon.swing.duration);
+  }
+
+  /** Increments each time a new swing begins. */
+  get swingId(): number {
+    return this._swingId;
   }
 
   constructor(
@@ -61,6 +67,7 @@ export class Player {
     }
 
     if (attack && !this._sheathed && this._swingTime <= 0) {
+      this._swingId += 1;
       this._swingTime = Number.EPSILON;
     }
     if (this._swingTime > 0) {

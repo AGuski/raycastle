@@ -8,6 +8,7 @@ import { Renderer } from './engine/renderer';
 import { mountStatsOverlay } from './engine/statsOverlay';
 import { Player } from './game/player';
 import { World, loadLevelRecipe } from './game/world';
+import { resolveWeaponStrike } from './game/weaponStrike';
 import weaponMaceImg from './assets/mace_weapon_1.png';
 
 function getCanvas(): HTMLCanvasElement {
@@ -54,6 +55,7 @@ async function main(): Promise<void> {
         input.consumeAttack(),
         input.consumeSheathToggle()
       );
+      resolveWeaponStrike(player, world.actors, world, world.deltaTime);
     },
     render() {
       renderer.render(player, world);
