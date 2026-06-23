@@ -212,7 +212,7 @@
 
 			<label>
 				Zoom (radius {Math.round(radiusTiles)} tiles)
-				<input type="range" min="4" max="64" step="1" bind:value={radiusTiles} />
+				<input type="range" min="4" max="128" step="1" bind:value={radiusTiles} />
 			</label>
 
 			<div class="legend">

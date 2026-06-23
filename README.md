@@ -44,86 +44,61 @@ Start the development server:
 npm run dev
 ```
 
-Open [http://localhost:5180](http://localhost:5180) in your browser to play.
+Open [http://localhost:5173](http://localhost:5173) in your browser to play.
 
 A top-down **world inspector** for debugging generation is served at
-[http://localhost:5180/admin](http://localhost:5180/admin) — adjust the seed,
-center, and zoom to preview chunks, walls, entities, and hidden doors without
-loading the game.
+[http://localhost:5173/admin](http://localhost:5173/admin) — adjust the seed, center, and zoom to preview chunks, walls and entities without loading the game.
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the SvelteKit dev server with hot reload (alias: `npm start`) |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview the production build locally |
-| `npm run check` | Type-check Svelte + TypeScript via `svelte-check` (alias: `npm run typecheck`) |
-| `npm run lint` | Run ESLint |
-| `npm test` | Run tests with Vitest |
+
+| Command           | Description                                                                    |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `npm run dev`     | Start the SvelteKit dev server with hot reload (alias: `npm start`)            |
+| `npm run build`   | Build for production                                                           |
+| `npm run preview` | Preview the production build locally                                           |
+| `npm run check`   | Type-check Svelte + TypeScript via `svelte-check` (alias: `npm run typecheck`) |
+| `npm run lint`    | Run ESLint                                                                     |
+| `npm test`        | Run tests with Vitest                                                          |
+
 
 ## Controls
 
 ### Desktop
 
-| Input | Action |
-| --- | --- |
-| Click canvas | Capture pointer (required for mouse look) |
-| Mouse move | Look left / right |
-| W / S or ↑ / ↓ | Move forward / backward |
-| A / D or ← / → | Strafe left / right |
-| F3 | Toggle debug overlay |
+
+| Input          | Action                                    |
+| -------------- | ----------------------------------------- |
+| Click canvas   | Capture pointer (required for mouse look) |
+| Mouse move     | Look left / right                         |
+| W / S or ↑ / ↓ | Move forward / backward                   |
+| A / D or ← / → | Strafe left / right                       |
+| F3             | Toggle debug overlay                      |
+
 
 ### Touch (mobile)
 
-| Input | Action |
-| --- | --- |
+
+| Input                | Action       |
+| -------------------- | ------------ |
 | Right half of screen | Drag to look |
-| Upper left | Move forward |
-| Lower left | Strafe left |
-| Lower right | Strafe right |
+| Upper left           | Move forward |
+| Lower left           | Strafe left  |
+| Lower right          | Strafe right |
+
 
 ## Project structure
 
 ```
 src/
-  app.html             SvelteKit HTML shell
-  routes/
-    +page.svelte       Home route — renders the game canvas
-    admin/+page.svelte  World inspector (top-down map, client-only)
+  routes/       SvelteKit pages (game canvas, admin world inspector)
   lib/
-    main.ts            startGame(canvas): wire systems and start the game loop
-    types.ts           Shared TypeScript types
-    components/
-      GameCanvas.svelte  Mounts <canvas> and calls startGame in onMount
-    core/
-      config.ts        Game constants (speed, FOV, resolution, etc.)
-      debug.ts         Debug overlay toggle state
-      input.ts         Keyboard, pointer-lock, and touch controls
-    engine/
-      assets.ts        Bitmap factory and image preloading
-      raycaster.ts     DDA ray casting math
-      lineOfSight.ts   Visibility queries for AI
-      renderer.ts      Thin wrapper over the GL renderer
-      gameLoop.ts      requestAnimationFrame loop
-      statsOverlay.ts  FPS overlay setup
-      gl/
-        glRenderer.ts  Ray cast + multi-pass WebGL2 pipeline
-        passes/        Floor/ceiling, walls, sprites, weapon, post
-        shaders/       GLSL vertex and fragment shaders
-    worldgen/          Pure, isomorphic world generation (no DOM/assets/config)
-      seededRng.ts     Deterministic RNG + seed hashing
-      terrain.ts       Terrain mask, portals, hidden-door candidates
-      generateChunkData.ts  Emits plain ChunkData (tiles + entity specs)
-      sampleArea.ts    Region sampler used by the inspector
-    game/
-      block.ts         Wall textures and block definitions
-      player.ts        Player movement and state
-      spriteSheet.ts   Sprite sheet frame helpers
-      world/           Chunk streaming, materializer, entities
-        materializeChunk.ts  Turns ChunkData into engine objects (assets, no RNG)
-      entities/        Sprites, animators, and AI actors
-    assets/            Texture images
+    components/ Svelte UI
+    core/       Config, input, debug
+    engine/     Ray casting, game loop, WebGL renderer and shaders
+    worldgen/   Pure procedural generation (no DOM or assets)
+    game/       World streaming, entities, systems, player
+    assets/     Texture images
 ```
 
 ## License
