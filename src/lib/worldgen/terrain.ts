@@ -162,6 +162,42 @@ export function buildTerrainMask(
   return mask;
 }
 
+/** True when a wall cell separates open space on one axis and walls on the other. */
+export function isHiddenDoorCandidate(
+  mask: boolean[][],
+  lx: number,
+  ly: number
+): boolean {
+  const open = (x: number, y: number) => mask[y][x];
+  const wall = (x: number, y: number) => !mask[y][x];
+
+  const nsOpen = open(lx, ly - 1) && open(lx, ly + 1);
+  const ewWall = wall(lx - 1, ly) && wall(lx + 1, ly);
+
+  const ewOpen = open(lx - 1, ly) && open(lx + 1, ly);
+  const nsWall = wall(lx, ly - 1) && wall(lx, ly + 1);
+
+  return (nsOpen && ewWall) || (ewOpen && nsWall);
+}
+
+export function findHiddenDoorCandidates(
+  mask: boolean[][],
+  chunkSize: number
+): { lx: number; ly: number }[] {
+  const candidates: { lx: number; ly: number }[] = [];
+
+  for (let ly = 1; ly < chunkSize - 1; ly++) {
+    for (let lx = 1; lx < chunkSize - 1; lx++) {
+      if (mask[ly][lx]) continue;
+      if (isHiddenDoorCandidate(mask, lx, ly)) {
+        candidates.push({ lx, ly });
+      }
+    }
+  }
+
+  return candidates;
+}
+
 export function carveOpenPad(
   mask: boolean[][],
   centerLx: number,

@@ -5,7 +5,7 @@ import { spawnStaticSprite } from '../../entities/staticSprite';
 import { SpriteSheet } from '../../spriteSheet';
 import { MAP_EMPTY, MapCell } from '../../../types';
 import { localIndex } from '../chunk';
-import { SeededRng } from './seededRng';
+import { SeededRng } from '../../../worldgen/seededRng';
 
 export interface DecorationAssets {
   wallImage: SpriteSheet;

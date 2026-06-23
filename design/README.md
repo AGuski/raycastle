@@ -4,6 +4,12 @@
 > These documents capture a brainstorm about turning Ray Castle from a tech demo
 > into a game. Nothing here is decided or scheduled. They exist so the thinking
 > survives outside a chat log and can be critiqued. Expect ideas to be cut.
+>
+> **Already built (no longer just proposed):** the app has been migrated to
+> **SvelteKit** (Svelte 5 / Vite / Tailwind, Vercel adapter); the world generator
+> has been extracted into a **pure, isomorphic `$lib/worldgen` module** (with a
+> game-side materializer and a parity test); and a first **admin world inspector**
+> lives at `/admin`. See [technical-architecture.md](technical-architecture.md).
 
 Ray Castle today is a strong **engine** (hybrid CPU raycaster + WebGL2 shaders,
 infinite procedural world, entity-component model) with no gameplay loop yet. The

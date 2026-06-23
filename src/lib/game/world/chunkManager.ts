@@ -12,11 +12,11 @@ import {
 import { EntityManager } from './entityManager';
 import { DecorationAssets } from './generator/decorate';
 import { generateChunk } from './generator/generateChunk';
-import { carveOpenPad, buildTerrainMask } from './generator/terrain';
-import { hashSeed } from './generator/seededRng';
+import { carveOpenPad, buildTerrainMask } from '../../worldgen/terrain';
+import { hashSeed } from '../../worldgen/seededRng';
 import { applyTerrainToCells } from './generator/decorate';
 import { LevelRecipe, SpawnHint } from './levelRecipe';
-import { SeededRng, chunkSeed } from './generator/seededRng';
+import { SeededRng, chunkSeed } from '../../worldgen/seededRng';
 
 export class ChunkManager {
   private readonly chunks = new Map<string, Chunk>();

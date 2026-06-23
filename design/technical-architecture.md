@@ -1,8 +1,19 @@
 # Technical architecture — multiplayer
 
-> **Status: exploratory draft (June 2026). Non-committal.** The engineering view of
-> the gameplay described in [gameplay-overview.md](gameplay-overview.md) and
-> [economy-and-items.md](economy-and-items.md).
+> **Status: exploratory draft (June 2026).** The engineering view of the gameplay
+> described in [gameplay-overview.md](gameplay-overview.md) and
+> [economy-and-items.md](economy-and-items.md). Most of this is still proposed and
+> non-committal, but some foundations are now **built** — see the "implemented"
+> callouts below.
+>
+> **Implemented so far:** the single **SvelteKit app on Vercel** topology (Svelte 5
+> runes, Vite, Tailwind, `@sveltejs/adapter-vercel`); the game runs client-only at
+> `/`; the **pure isomorphic `$lib/worldgen` module** (the deterministic generator,
+> decoupled from assets/rendering/config) with a game-side `materializeChunk` bridge
+> and a parity test guaranteeing byte-identical output; and a first read-only
+> **admin world inspector at `/admin`** that generates and visualizes worlds using
+> only `$lib/worldgen`. Still proposed: the authority/anti-cheat backend, the
+> friend-realtime layer, persistence, and the admin *mutation*/live-tuning surfaces.
 
 ---
 

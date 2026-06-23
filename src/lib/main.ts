@@ -1,5 +1,3 @@
-import './style.css';
-
 import { CONFIG } from './core/config';
 import { Input } from './core/input';
 import { AssetManager } from './engine/assets';
@@ -21,15 +19,7 @@ function playerView(player: Player) {
   };
 }
 
-function getCanvas(): HTMLCanvasElement {
-  const display = document.getElementById('display');
-  if (!display || !(display instanceof HTMLCanvasElement)) {
-    throw new Error('Canvas element #display not found');
-  }
-  return display;
-}
-
-async function main(): Promise<void> {
+export async function startGame(canvas: HTMLCanvasElement): Promise<void> {
   const assets = new AssetManager();
   const { textures, focalLength, renderRange } = CONFIG;
   const recipe = loadLevelRecipe();
@@ -47,7 +37,6 @@ async function main(): Promise<void> {
   const player = new Player(spawn.x, spawn.y, spawn.direction, weapon);
   world.ensureAround(player.x, player.y, { x: player.x, y: player.y });
 
-  const canvas = getCanvas();
   const input = new Input(canvas);
   const renderer = new Renderer(canvas, renderRange, focalLength);
   const stats = mountStatsOverlay();
@@ -72,5 +61,3 @@ async function main(): Promise<void> {
     }
   });
 }
-
-main();

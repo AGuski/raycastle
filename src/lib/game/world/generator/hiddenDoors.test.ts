@@ -10,7 +10,7 @@ import {
   isHiddenDoorCandidate,
   scatterHiddenDoors
 } from './hiddenDoors';
-import { SeededRng } from './seededRng';
+import { SeededRng } from '../../../worldgen/seededRng';
 
 function mockBlock(): Block {
   const texture = spriteSheet({

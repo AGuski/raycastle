@@ -11,8 +11,8 @@ import {
   buildTerrainMask,
   edgeHasPortal,
   getSharedEdgeCells
-} from './terrain';
-import { hashSeed, mixHash, randomDefaultSeed, SeededRng } from './seededRng';
+} from '../../../worldgen/terrain';
+import { hashSeed, mixHash, randomDefaultSeed, SeededRng } from '../../../worldgen/seededRng';
 import { defaultGeneratorParams } from '../levelRecipe';
 import { MAP_EMPTY, MapCell } from '../../../types';
 

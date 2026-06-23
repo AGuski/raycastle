@@ -1,5 +1,5 @@
 import { CONFIG } from '../../core/config';
-import { randomDefaultSeed } from './generator/seededRng';
+import { randomDefaultSeed } from '../../worldgen/seededRng';
 
 export interface GeneratorParams {
   chunkSize: number;
