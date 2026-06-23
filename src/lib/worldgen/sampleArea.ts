@@ -25,7 +25,8 @@ export function sampleArea(
   centerWx: number,
   centerWy: number,
   radiusTiles: number,
-  cache: Map<string, ChunkData> = new Map()
+  cache: Map<string, ChunkData> = new Map(),
+  spawnExclude?: { x: number; y: number }
 ): AreaSample {
   const { chunkSize } = params;
   const minWx = centerWx - radiusTiles;
@@ -45,7 +46,7 @@ export function sampleArea(
       const key = `${cx},${cy}`;
       let data = cache.get(key);
       if (!data) {
-        data = generateChunkData(cx, cy, worldSeed, params);
+        data = generateChunkData(cx, cy, worldSeed, params, spawnExclude);
         cache.set(key, data);
       }
       chunks.set(key, data);

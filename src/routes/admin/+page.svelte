@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import {
+		findSafeSpawn,
 		hashSeed,
 		randomDefaultSeed,
 		sampleArea,
@@ -15,9 +16,16 @@
 	const PAINTING_VARIANT_COUNT = 4;
 
 	// Spawn is read client-side from game config and passed into the (config-free)
-	// worldgen layer.
+	// worldgen layer. Use the exact player-start coords for spawn exclusion so the
+	// inspector matches in-game placement (doors/entities near spawn are skipped).
 	const spawnWx = Math.floor(CONFIG.playerStart.x);
 	const spawnWy = Math.floor(CONFIG.playerStart.y);
+	const spawnExclude = { x: CONFIG.playerStart.x, y: CONFIG.playerStart.y };
+	const spawnHint = {
+		x: CONFIG.playerStart.x,
+		y: CONFIG.playerStart.y,
+		direction: CONFIG.playerStart.direction
+	};
 
 	let seedText = $state('123456789012345');
 	let centerWx = $state(spawnWx);
@@ -26,20 +34,20 @@
 
 	let canvas: HTMLCanvasElement;
 
-	const ENTITY_COLORS: Record<EntityKind, string> = {
+	const HIDDEN_DOOR_COLOR = '#6b3a4a';
+
+	const ENTITY_COLORS: Record<Exclude<EntityKind, 'hiddenDoor'>, string> = {
 		lamp: '#ffd24a',
 		zombie: '#5fd35f',
 		garrison: '#4aa3ff',
-		hunterLich: '#c77dff',
-		hiddenDoor: '#ff5d5d'
+		hunterLich: '#c77dff'
 	};
 
-	const ENTITY_LABELS: Record<EntityKind, string> = {
+	const ENTITY_LABELS: Record<Exclude<EntityKind, 'hiddenDoor'>, string> = {
 		lamp: 'Lamp',
 		zombie: 'Zombie',
 		garrison: 'Garrison',
-		hunterLich: 'Hunter Lich',
-		hiddenDoor: 'Hidden Door'
+		hunterLich: 'Hunter Lich'
 	};
 
 	function params() {
@@ -70,7 +78,9 @@
 			params(),
 			Math.round(centerWx),
 			Math.round(centerWy),
-			radius
+			radius,
+			new Map(),
+			spawnExclude
 		);
 
 		const originWx = Math.round(centerWx) - radius;
@@ -106,9 +116,19 @@
 			}
 		}
 
+		// Hidden doors occupy full wall tiles (wx/wy is cell origin, not center).
+		for (const e of sample.entities) {
+			if (e.kind !== 'hiddenDoor') continue;
+			const dx = e.wx - originWx;
+			const dy = e.wy - originWy;
+			ctx.fillStyle = HIDDEN_DOOR_COLOR;
+			ctx.fillRect(dx * tilePx, dy * tilePx, Math.ceil(tilePx), Math.ceil(tilePx));
+		}
+
 		// Entities as dots.
 		const dot = Math.max(2, tilePx * 0.32);
 		for (const e of sample.entities) {
+			if (e.kind === 'hiddenDoor') continue;
 			const cx = (e.wx - originWx) * tilePx;
 			const cy = (e.wy - originWy) * tilePx;
 			ctx.fillStyle = ENTITY_COLORS[e.kind];
@@ -117,7 +137,7 @@
 			ctx.fill();
 		}
 
-		// Mark the center.
+		// Mark the view centre.
 		const ccx = (Math.round(centerWx) + 0.5 - originWx) * tilePx;
 		const ccy = (Math.round(centerWy) + 0.5 - originWy) * tilePx;
 		ctx.strokeStyle = '#ffffff';
@@ -128,6 +148,19 @@
 		ctx.lineTo(ccx + r, ccy);
 		ctx.moveTo(ccx, ccy - r);
 		ctx.lineTo(ccx, ccy + r);
+		ctx.stroke();
+
+		// Mark the actual player spawn (may differ when the hinted cell is walled).
+		const playerSpawn = findSafeSpawn(worldSeed, params(), spawnHint, spawnExclude);
+		const spx = (playerSpawn.x - originWx) * tilePx;
+		const spy = (playerSpawn.y - originWy) * tilePx;
+		const spawnRadius = Math.max(4, tilePx * 0.28);
+		ctx.fillStyle = '#7ec8ff';
+		ctx.strokeStyle = '#1a4a6e';
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.arc(spx, spy, spawnRadius, 0, Math.PI * 2);
+		ctx.fill();
 		ctx.stroke();
 	}
 
@@ -178,7 +211,7 @@
 
 			<div class="legend">
 				<h2>Legend</h2>
-				{#each Object.keys(ENTITY_COLORS) as EntityKind[] as kind (kind)}
+				{#each Object.keys(ENTITY_COLORS) as (keyof typeof ENTITY_COLORS)[] as kind (kind)}
 					<div class="legend-row">
 						<span class="swatch" style="background:{ENTITY_COLORS[kind]}"></span>
 						{ENTITY_LABELS[kind]}
@@ -188,7 +221,16 @@
 					<span class="swatch" style="background:#2c2438"></span>Wall
 				</div>
 				<div class="legend-row">
+					<span class="swatch" style="background:{HIDDEN_DOOR_COLOR}"></span>Hidden Door
+				</div>
+				<div class="legend-row">
 					<span class="swatch" style="background:#0d1117; border:1px solid #333"></span>Open
+				</div>
+				<div class="legend-row">
+					<span class="marker marker-cross"></span>View centre
+				</div>
+				<div class="legend-row">
+					<span class="marker marker-spawn"></span>Player spawn
 				</div>
 			</div>
 		</section>
@@ -273,5 +315,34 @@
 		height: 14px;
 		border-radius: 3px;
 		display: inline-block;
+	}
+	.marker {
+		width: 14px;
+		height: 14px;
+		display: inline-block;
+		position: relative;
+	}
+	.marker-cross::before,
+	.marker-cross::after {
+		content: '';
+		position: absolute;
+		background: #ffffff;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+	}
+	.marker-cross::before {
+		width: 10px;
+		height: 2px;
+	}
+	.marker-cross::after {
+		width: 2px;
+		height: 10px;
+	}
+	.marker-spawn {
+		border-radius: 50%;
+		background: #7ec8ff;
+		border: 2px solid #1a4a6e;
+		box-sizing: border-box;
 	}
 </style>
