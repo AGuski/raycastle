@@ -50,6 +50,15 @@
 		hunterLich: 'Hunter Lich'
 	};
 
+	type ActorKind = keyof typeof ENTITY_COLORS;
+
+	let hiddenActors = $state<Record<ActorKind, boolean>>({
+		lamp: false,
+		zombie: false,
+		garrison: false,
+		hunterLich: false
+	});
+
 	function params() {
 		return { ...defaultGeneratorParams(), paintingVariantCount: PAINTING_VARIANT_COUNT };
 	}
@@ -66,6 +75,10 @@
 	function recenterOnSpawn() {
 		centerWx = spawnWx;
 		centerWy = spawnWy;
+	}
+
+	function toggleActor(kind: ActorKind) {
+		hiddenActors = { ...hiddenActors, [kind]: !hiddenActors[kind] };
 	}
 
 	function draw() {
@@ -134,6 +147,7 @@
 		const dot = Math.max(2, tilePx * 0.32);
 		for (const e of sample.entities) {
 			if (e.kind === 'breakableWall') continue;
+			if (hiddenActors[e.kind]) continue;
 			const cx = (e.wx - originWx) * tilePx;
 			const cy = (e.wy - originWy) * tilePx;
 			ctx.fillStyle = ENTITY_COLORS[e.kind];
@@ -176,6 +190,7 @@
 		void centerWx;
 		void centerWy;
 		void radiusTiles;
+		void hiddenActors;
 		draw();
 	});
 
@@ -218,10 +233,15 @@
 			<div class="legend">
 				<h2>Legend</h2>
 				{#each Object.keys(ENTITY_COLORS) as (keyof typeof ENTITY_COLORS)[] as kind (kind)}
-					<div class="legend-row">
+					<button
+						type="button"
+						class="legend-row legend-toggle"
+						class:hidden={hiddenActors[kind]}
+						onclick={() => toggleActor(kind)}
+					>
 						<span class="swatch" style="background:{ENTITY_COLORS[kind]}"></span>
 						{ENTITY_LABELS[kind]}
-					</div>
+					</button>
 				{/each}
 				<div class="legend-row">
 					<span class="swatch" style="background:#2c2438"></span>Wall
@@ -315,6 +335,27 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin-bottom: 0.25rem;
+	}
+	button.legend-toggle {
+		background: none;
+		border: none;
+		padding: 0.15rem 0.25rem;
+		margin: 0 -0.25rem;
+		border-radius: 4px;
+		text-align: left;
+		width: calc(100% + 0.5rem);
+		color: inherit;
+		cursor: pointer;
+		font: inherit;
+	}
+	button.legend-toggle:hover {
+		background: rgba(255, 255, 255, 0.06);
+	}
+	button.legend-toggle.hidden {
+		opacity: 0.4;
+	}
+	button.legend-toggle.hidden .swatch {
+		opacity: 0.35;
 	}
 	.swatch {
 		width: 14px;
