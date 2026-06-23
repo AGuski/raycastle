@@ -58,6 +58,11 @@
 		seedText = randomDefaultSeed();
 	}
 
+	function openGame() {
+		const seed = encodeURIComponent(seedText.trim() || '0');
+		window.open(`/?seed=${seed}`, '_blank', 'noopener,noreferrer');
+	}
+
 	function recenterOnSpawn() {
 		centerWx = spawnWx;
 		centerWy = spawnWy;
@@ -193,6 +198,7 @@
 				<input type="text" bind:value={seedText} spellcheck="false" />
 			</label>
 			<button type="button" onclick={randomize}>Random seed</button>
+			<button type="button" onclick={openGame}>Play with seed</button>
 
 			<label>
 				Center X
