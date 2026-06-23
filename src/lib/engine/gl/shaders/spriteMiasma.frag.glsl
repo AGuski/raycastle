@@ -136,14 +136,31 @@ void main() {
   // Posterize smoke opacity to a few discrete levels for pixel-art dithering.
   smoke = floor(smoke * 5.0) / 5.0;
 
-  // Cold, desaturated tones to match the charcoal robe and icy-blue eyes.
-  vec3 coldGlow = vec3(0.07, 0.10, 0.14);
-  vec3 abyss = vec3(0.001, 0.0012, 0.001);
+  // --- MIASMA PALETTE (hardcoded; this is the one place to change its color) ---
+  // The smoke/halo uses ONLY these colors plus the sprite's alpha for shape --
+  // it never samples the sprite's RGB, so it is immune to texture compression.
+  // `abyss` is the deep near-black; `coldGlow` is the cold, desaturated highlight
+  // that matches the charcoal robe and icy-blue eyes.
+  const vec3 abyss = vec3(0.001, 0.0012, 0.001);
+  const vec3 coldGlow = vec3(0.07, 0.10, 0.14);
+  // How strongly the robe's own dark mass is pulled toward `abyss`, anchoring the
+  // silhouette to this intended deep black so it can't drift toward, e.g., the
+  // greenish-grey of a lossily compressed sprite. 0 = use the sprite's RGB as-is.
+  const float bodySink = 0.7;
+
   vec3 smokeColor = mix(abyss, coldGlow, floor(flame * 3.0) / 3.0 * halo);
 
   // Tint the body's own edges with creeping, flickering darkness too.
   float edge = (1.0 - smoothstep(0.2, 0.9, bodyAlpha)) * bodyAlpha;
   vec3 color = mix(tex.rgb, coldGlow, edge * flame * 0.6 * lift);
+
+  // Sink the robe's dark tones toward the hardcoded abyss -- strongest on the
+  // upper body (`lift`) and for already-dark pixels -- so the hood reads as deep
+  // black while painted highlights (skull, glowing eyes) are preserved.
+  float bodyLuma = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
+  float darkMask = 1.0 - smoothstep(0.0, 0.32, bodyLuma);
+  color = mix(color, abyss, clamp(darkMask * lift * bodySink, 0.0, 1.0));
+
   color = mix(color, smokeColor, smoke);
 
   if (uSmokeOnly > 0.5) {
