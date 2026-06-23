@@ -3,7 +3,7 @@ import { Block, BlockSide } from '../../block';
 import { spriteSheet } from '../../spriteSheet';
 import { Entity } from '../../entities/entity';
 import { Renderable } from '../../entities/components/renderable';
-import { HiddenDoor } from '../../entities/components/hiddenDoor';
+import { BreakableWall } from '../../entities/components/breakableWall';
 import { Strikeable } from '../../entities/components/strikeable';
 import { CellAnchor } from '../../entities/components/cellAnchor';
 import { MAP_EMPTY, MapCell } from '../../../types';
@@ -22,7 +22,7 @@ import {
   scatterLamps,
   scatterActors
 } from './decorate';
-import { scatterHiddenDoors } from './hiddenDoors';
+import { scatterBreakableWalls } from './breakableWalls';
 
 const CHUNK_SIZE = 16;
 const WORLD_SEED = hashSeed('parity-world');
@@ -60,7 +60,7 @@ const PARAMS = { ...defaultGeneratorParams(), chunkSize: CHUNK_SIZE };
 
 /**
  * Reproduces the ORIGINAL pre-refactor generateChunk body using the untouched
- * decorate / hiddenDoors helpers. This is the "pre" reference: identical fork
+ * decorate / breakableWalls helpers. This is the "pre" reference: identical fork
  * salts and call order to the original orchestrator.
  */
 function legacyGenerateChunk(
@@ -78,9 +78,7 @@ function legacyGenerateChunk(
     garrisonDensity,
     hunterLichDensity,
     borderPortalCount,
-    hiddenDoorDensity,
-    hiddenDoorOpenRadius,
-    hiddenDoorPlayerClearRadius
+    breakableWallDensity
   } = PARAMS;
 
   const mask = buildTerrainMask(WORLD_SEED, cx, cy, chunkSize, wallDensity, borderPortalCount);
@@ -94,11 +92,8 @@ function legacyGenerateChunk(
     ...scatterExclude
   });
 
-  const cellEntities = scatterHiddenDoors(mask, cells, chunkSize, cx, cy, rng.fork(0x8d00), {
-    density: hiddenDoorDensity,
-    openRadius: hiddenDoorOpenRadius,
-    clearRadius: hiddenDoorPlayerClearRadius,
-    ...scatterExclude
+  const cellEntities = scatterBreakableWalls(mask, cells, chunkSize, cx, cy, rng.fork(0x8d00), {
+    density: breakableWallDensity
   });
 
   const entities = scatterActors(
@@ -166,9 +161,9 @@ function tileSignature(cells: MapCell[]): string {
 function entitySig(e: Entity, assets: DecorationAssets): string {
   const x = e.x.toFixed(4);
   const y = e.y.toFixed(4);
-  if (e.get(HiddenDoor)) {
+  if (e.get(BreakableWall)) {
     const anchor = e.get(CellAnchor);
-    return `door@${anchor?.wx},${anchor?.wy}:${x},${y}`;
+    return `wall@${anchor?.wx},${anchor?.wy}:${x},${y}`;
   }
   const r = e.get(Renderable);
   const tex = r?.texture;
@@ -218,16 +213,15 @@ describe('worldgen parity: materialize(generateChunkData) === legacy generateChu
     }
   });
 
-  it('covers a chunk that contains at least one hidden door', () => {
+  it('covers a chunk that contains at least one breakable wall', () => {
     let found = false;
     for (const { cx, cy } of coords) {
       const assets = mockAssets();
       const next = generateChunk(cx, cy, WORLD_SEED, PARAMS, assets, SPAWN);
-      if (next.chunk.cellEntities.some((e) => e.get(HiddenDoor))) {
+      if (next.chunk.cellEntities.some((e) => e.get(BreakableWall))) {
         found = true;
-        // The door must sit on a wall cell that the materializer turned into a Block.
-        for (const door of next.chunk.cellEntities) {
-          const anchor = door.get(CellAnchor)!;
+        for (const wall of next.chunk.cellEntities) {
+          const anchor = wall.get(CellAnchor)!;
           const lx = anchor.wx - cx * CHUNK_SIZE;
           const ly = anchor.wy - cy * CHUNK_SIZE;
           const cell = next.chunk.cells[ly * CHUNK_SIZE + lx];
@@ -235,7 +229,9 @@ describe('worldgen parity: materialize(generateChunkData) === legacy generateChu
         }
       }
     }
-    expect(found, 'expected at least one hidden door in the sampled region').toBe(true);
+    expect(found, 'expected at least one breakable wall in the sampled region').toBe(
+      true
+    );
   });
 
   it('data layer is deterministic for a fixed seed (golden checksum)', () => {

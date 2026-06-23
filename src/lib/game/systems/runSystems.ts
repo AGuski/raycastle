@@ -1,7 +1,11 @@
+import { resolveBreakableWallWeaponStrike } from '../entities/components/breakableWall';
 import { ComponentContext } from '../entities/component';
 import { Entity } from '../entities/entity';
 import { resolveContactEvents } from './contact';
-import { resolveWeaponStrike } from './weaponStrike';
+import {
+  isWeaponStrikeFrame,
+  resolveActorWeaponStrike
+} from './weaponStrike';
 
 /** Cross-entity passes that run after component ticks. */
 export function runSystems(
@@ -9,5 +13,10 @@ export function runSystems(
   entities: Iterable<Entity>
 ): void {
   resolveContactEvents(entities);
-  resolveWeaponStrike(ctx, entities);
+
+  if (!isWeaponStrikeFrame(ctx.player)) return;
+
+  if (resolveBreakableWallWeaponStrike(ctx, entities)) return;
+
+  resolveActorWeaponStrike(ctx, entities);
 }

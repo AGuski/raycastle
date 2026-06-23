@@ -6,7 +6,7 @@ exports[`worldgen parity: materialize(generateChunkData) === legacy generateChun
   "decorCount": 95,
   "entityCount": 21,
   "kinds": {
-    "hiddenDoor": 5,
+    "breakableWall": 5,
     "lamp": 14,
     "zombie": 2,
   },

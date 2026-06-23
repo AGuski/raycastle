@@ -16,6 +16,8 @@ export interface GameWorld extends RaycastWorld {
   isOpen(x: number, y: number): boolean;
   /** Mutate a grid cell in place (smart cells only). */
   setCell?(wx: number, wy: number, cell: MapCell): void;
+  /** Remove a smart-cell entity after it is destroyed. */
+  removeCellEntity?(entity: Entity): void;
 }
 
 /** Per-tick context shared by all components and systems. */

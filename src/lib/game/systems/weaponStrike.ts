@@ -1,22 +1,13 @@
 import { CONFIG } from '../../core/config';
 import { hasLineOfSight } from '../../engine/lineOfSight';
 import { Point } from '../../types';
-import { ComponentContext } from '../entities/component';
+import { ComponentContext, PlayerView } from '../entities/component';
 import { Entity } from '../entities/entity';
 import { Strikeable } from '../entities/components/strikeable';
 
-export interface StrikeViewer {
-  x: number;
-  y: number;
-  direction: number;
-  sheathed: boolean;
-  swingProgress: number;
-  swingId: number;
-}
-
 /** True when a point lies in the view-center strike cone. */
 export function isInStrikeCone(
-  viewer: StrikeViewer,
+  viewer: PlayerView,
   target: Point,
   range = CONFIG.weapon.strike.range,
   halfAngle = CONFIG.weapon.strike.halfAngle
@@ -40,14 +31,17 @@ export function isStrikeActive(
   return progress >= strike.activeStart && progress <= strike.activeEnd;
 }
 
-/** Marks strikeable entities hit by the current swing during its active frames. */
-export function resolveWeaponStrike(
+export function isWeaponStrikeFrame(player: PlayerView): boolean {
+  if (player.sheathed || player.swingProgress <= 0) return false;
+  return isStrikeActive(player.swingProgress);
+}
+
+/** Marks strikeable actors hit by the current swing during its active frames. */
+export function resolveActorWeaponStrike(
   ctx: ComponentContext,
   entities: Iterable<Entity>
 ): void {
   const { player, time, world } = ctx;
-  if (player.sheathed || player.swingProgress <= 0) return;
-  if (!isStrikeActive(player.swingProgress)) return;
 
   for (const entity of entities) {
     const strikeable = entity.get(Strikeable);
@@ -56,17 +50,8 @@ export function resolveWeaponStrike(
     if (!isInStrikeCone(player, entity)) continue;
     if (!hasLineOfSight(world, player, entity)) continue;
 
-    applyStrike(strikeable, player.swingId, player, time);
+    strikeable.markHit(player.swingId, time);
+    strikeable.applyKnockback(player, CONFIG.weapon.strike.knockbackDistance);
     console.log('[strike] hit actor', { x: entity.x, y: entity.y });
   }
-}
-
-function applyStrike(
-  strikeable: Strikeable,
-  swingId: number,
-  from: Point,
-  worldTime: number
-): void {
-  strikeable.markHit(swingId, worldTime);
-  strikeable.applyKnockback(from, CONFIG.weapon.strike.knockbackDistance);
 }

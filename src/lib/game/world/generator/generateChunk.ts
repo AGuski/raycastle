@@ -28,9 +28,7 @@ function toWorldGenParams(
     garrisonDensity: params.garrisonDensity,
     hunterLichDensity: params.hunterLichDensity,
     borderPortalCount: params.borderPortalCount,
-    hiddenDoorDensity: params.hiddenDoorDensity,
-    hiddenDoorOpenRadius: params.hiddenDoorOpenRadius,
-    hiddenDoorPlayerClearRadius: params.hiddenDoorPlayerClearRadius,
+    breakableWallDensity: params.breakableWallDensity,
     paintingVariantCount
   };
 }

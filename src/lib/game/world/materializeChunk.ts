@@ -2,7 +2,7 @@ import { CONFIG } from '../../core/config';
 import { Block, BlockSides } from '../block';
 import { ActorSpawnConfig, createStrikeableActor } from '../entities/spawnActor';
 import { Entity } from '../entities/entity';
-import { spawnHiddenDoor } from '../entities/spawnHiddenDoor';
+import { spawnBreakableWall } from '../entities/spawnBreakableWall';
 import { spawnStaticSprite } from '../entities/staticSprite';
 import { SpriteSheet } from '../spriteSheet';
 import { MAP_EMPTY, MapCell } from '../../types';
@@ -58,7 +58,7 @@ function actorTextureFor(kind: EntityKind, assets: DecorationAssets): SpriteShee
 /**
  * Turn pure chunk data into engine objects. NO randomness here — every choice
  * was already made (and recorded) by `generateChunkData`. Buckets match the
- * original generator: lamps are static props, hidden doors are smart cells,
+ * original generator: lamps are static props, breakable walls are smart cells,
  * actors are dynamic entities returned to the entity manager.
  */
 export function materializeChunk(
@@ -81,12 +81,15 @@ export function materializeChunk(
       case 'lamp':
         staticEntities.push(spawnStaticSprite(assets.lampstand, spec.wx, spec.wy));
         break;
-      case 'hiddenDoor': {
+      case 'breakableWall': {
         const wx = spec.wx;
         const wy = spec.wy;
         const cell = cells[localIndex(wx - cx * chunkSize, wy - cy * chunkSize, chunkSize)];
         if (cell === MAP_EMPTY || !(cell instanceof Block)) break;
-        cellEntities.push(spawnHiddenDoor(wx, wy, cell, spec.openRadius ?? 0));
+        if (!spec.faces) break;
+        cellEntities.push(
+          spawnBreakableWall(wx, wy, cell, spec.faces)
+        );
         break;
       }
       case 'zombie':

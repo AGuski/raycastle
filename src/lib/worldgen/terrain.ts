@@ -163,7 +163,7 @@ export function buildTerrainMask(
 }
 
 /** True when a wall cell separates open space on one axis and walls on the other. */
-export function isHiddenDoorCandidate(
+export function isBreakableWallCandidate(
   mask: boolean[][],
   lx: number,
   ly: number
@@ -180,7 +180,7 @@ export function isHiddenDoorCandidate(
   return (nsOpen && ewWall) || (ewOpen && nsWall);
 }
 
-export function findHiddenDoorCandidates(
+export function findBreakableWallCandidates(
   mask: boolean[][],
   chunkSize: number
 ): { lx: number; ly: number }[] {
@@ -189,13 +189,24 @@ export function findHiddenDoorCandidates(
   for (let ly = 1; ly < chunkSize - 1; ly++) {
     for (let lx = 1; lx < chunkSize - 1; lx++) {
       if (mask[ly][lx]) continue;
-      if (isHiddenDoorCandidate(mask, lx, ly)) {
+      if (isBreakableWallCandidate(mask, lx, ly)) {
         candidates.push({ lx, ly });
       }
     }
   }
 
   return candidates;
+}
+
+/** Corridor-facing wall sides for crack decals on a breakable wall cell. */
+export function breakableWallFaces(
+  mask: boolean[][],
+  lx: number,
+  ly: number
+): [0 | 1 | 2 | 3, 0 | 1 | 2 | 3] {
+  const open = (x: number, y: number) => mask[y][x];
+  const nsOpen = open(lx, ly - 1) && open(lx, ly + 1);
+  return nsOpen ? [3, 1] : [2, 0];
 }
 
 export function carveOpenPad(

@@ -1,4 +1,8 @@
-import { buildTerrainMask, findHiddenDoorCandidates } from './terrain';
+import {
+  breakableWallFaces,
+  buildTerrainMask,
+  findBreakableWallCandidates
+} from './terrain';
 import { chunkSeed, SeededRng } from './seededRng';
 import { ChunkData, EntitySpec, Tile, WallDecor, WorldGenParams } from './types';
 
@@ -75,9 +79,7 @@ export function generateChunkData(
     garrisonDensity,
     hunterLichDensity,
     borderPortalCount,
-    hiddenDoorDensity,
-    hiddenDoorOpenRadius,
-    hiddenDoorPlayerClearRadius,
+    breakableWallDensity,
     paintingVariantCount
   } = params;
 
@@ -134,35 +136,22 @@ export function generateChunkData(
     entities
   );
 
-  // Hidden doors — fork(0x8d00), cellEntities bucket.
-  // Candidates are always wall cells, so the door always spawns when the
-  // density and exclusion checks pass (the old instanceof Block check was
-  // always true for candidates).
+  // Breakable walls — fork(0x8d00), cellEntities bucket.
   {
-    const doorRng = rng.fork(0x8d00);
-    const candidates = findHiddenDoorCandidates(mask, chunkSize);
-    const clearRadiusSq = hiddenDoorPlayerClearRadius * hiddenDoorPlayerClearRadius;
+    const wallRng = rng.fork(0x8d00);
+    const candidates = findBreakableWallCandidates(mask, chunkSize);
 
     for (const { lx, ly } of candidates) {
-      if (doorRng.next() >= hiddenDoorDensity) continue;
+      if (wallRng.next() >= breakableWallDensity) continue;
 
       const wx = cx * chunkSize + lx;
       const wy = cy * chunkSize + ly;
-      const centerX = wx + 0.5;
-      const centerY = wy + 0.5;
 
-      if (exclude.excludeWx !== undefined && exclude.excludeWy !== undefined) {
-        const dx = centerX - exclude.excludeWx;
-        const dy = centerY - exclude.excludeWy;
-        if (dx * dx + dy * dy < clearRadiusSq) continue;
-      }
-
-      // Door spec carries the cell origin (wx, wy), matching spawnHiddenDoor.
       entities.push({
-        kind: 'hiddenDoor',
+        kind: 'breakableWall',
         wx,
         wy,
-        openRadius: hiddenDoorOpenRadius
+        faces: breakableWallFaces(mask, lx, ly)
       });
     }
   }

@@ -103,11 +103,8 @@ export const CONFIG = {
     garrisonDensity: 0.002,
     hunterLichDensity: 0.008,
     borderPortalCount: { min: 1, max: 3 },
-    /** Per-candidate probability of placing a hidden door in a chunk. */
-    hiddenDoorDensity: 0.2,
-    /** Player distance at which a hidden door opens (world units). */
-    hiddenDoorOpenRadius: 2.2,
-    hiddenDoorPlayerClearRadius: 4
+    /** Per-candidate probability of placing a breakable wall in a chunk. */
+    breakableWallDensity: 0.2
   },
   actors: {
     zombie: {
@@ -155,6 +152,7 @@ export const CONFIG = {
     garrison: { width: 1024, height: 1024 },
     hunterLich: { width: 1024, height: 1024 },
     floorWood: { width: 1024, height: 1024 },
-    ceilingWood: { width: 1024, height: 1024 }
+    ceilingWood: { width: 1024, height: 1024 },
+    wallCracksDecal: { width: 1024, height: 1024 }
   }
 } as const;

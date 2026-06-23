@@ -44,7 +44,7 @@ export class Chunk {
     public readonly cells: MapCell[],
     /** Static props in this chunk (lamps, etc.). */
     public readonly entities: Entity[],
-    /** Smart grid cells (hidden doors, etc.). */
+    /** Smart grid cells (breakable walls, etc.). */
     public readonly cellEntities: Entity[] = []
   ) {}
 }

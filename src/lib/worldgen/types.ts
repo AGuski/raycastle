@@ -11,17 +11,25 @@ export const enum Tile {
   Wall = 1
 }
 
-export type EntityKind = 'lamp' | 'zombie' | 'garrison' | 'hunterLich' | 'hiddenDoor';
+export type EntityKind =
+  | 'lamp'
+  | 'zombie'
+  | 'garrison'
+  | 'hunterLich'
+  | 'breakableWall';
+
+/** Cardinal wall-face indices matching the game Block sides array. */
+export type WallFace = 0 | 1 | 2 | 3;
 
 /** A single spawned thing, located in world coordinates. */
 export interface EntitySpec {
   kind: EntityKind;
-  /** World-space center x (cell + 0.5 for scatter; cell origin for doors — see below). */
+  /** World-space center x (cell + 0.5 for scatter; cell origin for walls — see below). */
   wx: number;
   /** World-space center y. */
   wy: number;
-  /** Reveal radius, present only for hidden doors. */
-  openRadius?: number;
+  /** Corridor-facing sides for crack decals (breakable walls only). */
+  faces?: [WallFace, WallFace];
 }
 
 /** Decoration baked onto a wall cell (which side carries the painting, and which variant). */
@@ -57,9 +65,7 @@ export interface WorldGenParams {
   garrisonDensity: number;
   hunterLichDensity: number;
   borderPortalCount: { min: number; max: number };
-  hiddenDoorDensity: number;
-  hiddenDoorOpenRadius: number;
-  hiddenDoorPlayerClearRadius: number;
+  breakableWallDensity: number;
   /** Number of painting variants; must equal assets.paintings.length. */
   paintingVariantCount: number;
 }

@@ -3,7 +3,9 @@ import { AssetManager } from '../../engine/assets';
 import { Bitmap, Block, BlockSide, BlockSides } from '../block';
 import { PlayerView } from '../entities/component';
 import { Entity } from '../entities/entity';
+import { decalsFromCellEntities } from '../entities/decalsFromEntities';
 import { spritesFromEntities } from '../entities/spritesFromEntities';
+import { Decal } from '../decal';
 import { Sprite } from '../entities/sprite';
 import { runSystems } from '../systems/runSystems';
 import { spriteSheet, SpriteSheet } from '../spriteSheet';
@@ -23,6 +25,7 @@ import garrisonImg from '../../assets/mr-garrison.png';
 import hunterLichImg from '../../assets/hunter_lich_1.png';
 import floorWoodImg from '../../assets/floor_wood_1.png';
 import ceilingWoodImg from '../../assets/wooden_panel_ceiling_1.png';
+import wallCracksImg from '../../assets/wall_cracks_decal_1.png';
 
 export { loadLevelRecipe };
 
@@ -42,6 +45,7 @@ export class World {
   private readonly zombie: SpriteSheet;
   private readonly garrison: SpriteSheet;
   private readonly hunterLich: SpriteSheet;
+  private readonly crackDecal: SpriteSheet;
   private readonly paintings: BlockSide[];
   private readonly boundaryBlock: Block;
 
@@ -129,6 +133,13 @@ export class World {
         textures.hunterLich.height
       )
     );
+    this.crackDecal = spriteSheet(
+      assets.createBitmap(
+        wallCracksImg,
+        textures.wallCracksDecal.width,
+        textures.wallCracksDecal.height
+      )
+    );
     this.floorTexture = assets.createBitmap(
       floorWoodImg,
       textures.floorWood.width,
@@ -165,6 +176,13 @@ export class World {
     );
   }
 
+  get decals(): Decal[] {
+    return decalsFromCellEntities(
+      this.chunkManager.getCellEntities(),
+      this.crackDecal
+    );
+  }
+
   get sprites(): Sprite[] {
     return spritesFromEntities([
       ...this.chunkManager.getStaticEntities(),
@@ -186,6 +204,7 @@ export class World {
       this.hunterLich.bitmap,
       this.floorTexture,
       this.ceilingTexture,
+      this.crackDecal.bitmap,
       ...this.paintings
         .map((p) => p.texture?.bitmap)
         .filter((t): t is Bitmap => !!t)
@@ -212,6 +231,10 @@ export class World {
     this.chunkManager.setCell(wx, wy, cell);
   }
 
+  removeCellEntity(entity: Entity): void {
+    this.chunkManager.removeCellEntity(entity);
+  }
+
   update(seconds: number, player: PlayerView): void {
     this.deltaTime += seconds;
     this.chunkManager.updateStreaming(player.x, player.y);
@@ -229,7 +252,7 @@ export class World {
         world: this,
         player
       },
-      this.entityManager.entities
+      [...this.entityManager.entities, ...this.chunkManager.getCellEntities()]
     );
   }
 }

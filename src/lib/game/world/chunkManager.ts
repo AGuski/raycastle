@@ -181,6 +181,24 @@ export class ChunkManager {
     return entities;
   }
 
+  getCellEntities(): Entity[] {
+    const entities: Entity[] = [];
+    for (const chunk of this.chunks.values()) {
+      entities.push(...chunk.cellEntities);
+    }
+    return entities;
+  }
+
+  removeCellEntity(entity: Entity): void {
+    for (const chunk of this.chunks.values()) {
+      const index = chunk.cellEntities.indexOf(entity);
+      if (index !== -1) {
+        chunk.cellEntities.splice(index, 1);
+        return;
+      }
+    }
+  }
+
   updateCellEntities(
     seconds: number,
     player: PlayerView,

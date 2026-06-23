@@ -8,6 +8,7 @@ import { createZBufferTexture, clearTextureCache } from './glTexture';
 import { FrameContext, RenderPass } from './renderPass';
 import { FloorCeilingPass } from './passes/floorCeilingPass';
 import { WallPass } from './passes/wallPass';
+import { DecalPass } from './passes/decalPass';
 import { SpritePass } from './passes/spritePass';
 import { WeaponPass } from './passes/weaponPass';
 import { PostPass } from './passes/postPass';
@@ -33,6 +34,7 @@ export class GlRenderer {
     this.passes = [
       new FloorCeilingPass(),
       new WallPass(),
+      new DecalPass(),
       new SpritePass(),
       new WeaponPass(),
       new PostPass()

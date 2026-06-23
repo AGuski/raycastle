@@ -34,16 +34,16 @@
 
 	let canvas: HTMLCanvasElement;
 
-	const HIDDEN_DOOR_COLOR = '#6b3a4a';
+	const BREAKABLE_WALL_COLOR = '#6b3a4a';
 
-	const ENTITY_COLORS: Record<Exclude<EntityKind, 'hiddenDoor'>, string> = {
+	const ENTITY_COLORS: Record<Exclude<EntityKind, 'breakableWall'>, string> = {
 		lamp: '#ffd24a',
 		zombie: '#5fd35f',
 		garrison: '#4aa3ff',
 		hunterLich: '#c77dff'
 	};
 
-	const ENTITY_LABELS: Record<Exclude<EntityKind, 'hiddenDoor'>, string> = {
+	const ENTITY_LABELS: Record<Exclude<EntityKind, 'breakableWall'>, string> = {
 		lamp: 'Lamp',
 		zombie: 'Zombie',
 		garrison: 'Garrison',
@@ -116,19 +116,19 @@
 			}
 		}
 
-		// Hidden doors occupy full wall tiles (wx/wy is cell origin, not center).
+		// Breakable walls occupy full wall tiles (wx/wy is cell origin, not center).
 		for (const e of sample.entities) {
-			if (e.kind !== 'hiddenDoor') continue;
+			if (e.kind !== 'breakableWall') continue;
 			const dx = e.wx - originWx;
 			const dy = e.wy - originWy;
-			ctx.fillStyle = HIDDEN_DOOR_COLOR;
+			ctx.fillStyle = BREAKABLE_WALL_COLOR;
 			ctx.fillRect(dx * tilePx, dy * tilePx, Math.ceil(tilePx), Math.ceil(tilePx));
 		}
 
 		// Entities as dots.
 		const dot = Math.max(2, tilePx * 0.32);
 		for (const e of sample.entities) {
-			if (e.kind === 'hiddenDoor') continue;
+			if (e.kind === 'breakableWall') continue;
 			const cx = (e.wx - originWx) * tilePx;
 			const cy = (e.wy - originWy) * tilePx;
 			ctx.fillStyle = ENTITY_COLORS[e.kind];
@@ -221,7 +221,7 @@
 					<span class="swatch" style="background:#2c2438"></span>Wall
 				</div>
 				<div class="legend-row">
-					<span class="swatch" style="background:{HIDDEN_DOOR_COLOR}"></span>Hidden Door
+					<span class="swatch" style="background:{BREAKABLE_WALL_COLOR}"></span>Breakable Wall
 				</div>
 				<div class="legend-row">
 					<span class="swatch" style="background:#0d1117; border:1px solid #333"></span>Open

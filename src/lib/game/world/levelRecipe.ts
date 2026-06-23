@@ -13,9 +13,7 @@ export interface GeneratorParams {
   garrisonDensity: number;
   hunterLichDensity: number;
   borderPortalCount: { min: number; max: number };
-  hiddenDoorDensity: number;
-  hiddenDoorOpenRadius: number;
-  hiddenDoorPlayerClearRadius: number;
+  breakableWallDensity: number;
 }
 
 export interface LevelBounds {
@@ -53,9 +51,7 @@ export function defaultGeneratorParams(): GeneratorParams {
     garrisonDensity: world.garrisonDensity,
     hunterLichDensity: world.hunterLichDensity,
     borderPortalCount: { ...world.borderPortalCount },
-    hiddenDoorDensity: world.hiddenDoorDensity,
-    hiddenDoorOpenRadius: world.hiddenDoorOpenRadius,
-    hiddenDoorPlayerClearRadius: world.hiddenDoorPlayerClearRadius
+    breakableWallDensity: world.breakableWallDensity
   };
 }
 
