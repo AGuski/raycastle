@@ -88,7 +88,7 @@ export function materializeChunk(
         if (cell === MAP_EMPTY || !(cell instanceof Block)) break;
         if (!spec.faces) break;
         cellEntities.push(
-          spawnBreakableWall(wx, wy, cell, spec.faces)
+          spawnBreakableWall(wx, wy, cell, spec.faces, assets.crackDecal)
         );
         break;
       }

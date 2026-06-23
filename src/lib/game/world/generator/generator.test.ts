@@ -35,7 +35,8 @@ function mockDecorationAssets(): DecorationAssets {
     wallImage,
     paintings: [painting],
     lampstand: spriteSheet(mockBitmap()),
-    zombie: spriteSheet(mockBitmap())
+    zombie: spriteSheet(mockBitmap()),
+    crackDecal: spriteSheet(mockBitmap())
   };
 }
 

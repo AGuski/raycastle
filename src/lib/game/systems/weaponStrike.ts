@@ -1,9 +1,6 @@
 import { CONFIG } from '../../core/config';
-import { hasLineOfSight } from '../../engine/lineOfSight';
 import { Point } from '../../types';
-import { ComponentContext, PlayerView } from '../entities/component';
-import { Entity } from '../entities/entity';
-import { Strikeable } from '../entities/components/strikeable';
+import { PlayerView } from '../entities/component';
 
 /** True when a point lies in the view-center strike cone. */
 export function isInStrikeCone(
@@ -34,24 +31,4 @@ export function isStrikeActive(
 export function isWeaponStrikeFrame(player: PlayerView): boolean {
   if (player.sheathed || player.swingProgress <= 0) return false;
   return isStrikeActive(player.swingProgress);
-}
-
-/** Marks strikeable actors hit by the current swing during its active frames. */
-export function resolveActorWeaponStrike(
-  ctx: ComponentContext,
-  entities: Iterable<Entity>
-): void {
-  const { player, time, world } = ctx;
-
-  for (const entity of entities) {
-    const strikeable = entity.get(Strikeable);
-    if (!strikeable) continue;
-    if (strikeable.wasHitBySwing(player.swingId)) continue;
-    if (!isInStrikeCone(player, entity)) continue;
-    if (!hasLineOfSight(world, player, entity)) continue;
-
-    strikeable.markHit(player.swingId, time);
-    strikeable.applyKnockback(player, CONFIG.weapon.strike.knockbackDistance);
-    console.log('[strike] hit actor', { x: entity.x, y: entity.y });
-  }
 }

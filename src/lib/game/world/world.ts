@@ -169,7 +169,8 @@ export class World {
         lampstand: this.lampstand,
         zombie: this.zombie,
         garrison: this.garrison,
-        hunterLich: this.hunterLich
+        hunterLich: this.hunterLich,
+        crackDecal: this.crackDecal
       },
       this.boundaryBlock,
       this.entityManager
@@ -177,10 +178,7 @@ export class World {
   }
 
   get decals(): Decal[] {
-    return decalsFromCellEntities(
-      this.chunkManager.getCellEntities(),
-      this.crackDecal
-    );
+    return decalsFromCellEntities(this.chunkManager.getCellEntities());
   }
 
   get sprites(): Sprite[] {

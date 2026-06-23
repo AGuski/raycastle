@@ -52,7 +52,8 @@ function mockAssets(): DecorationAssets {
     lampstand: spriteSheet(mockBitmap()),
     zombie: spriteSheet(mockBitmap()),
     garrison: spriteSheet(mockBitmap()),
-    hunterLich: spriteSheet(mockBitmap())
+    hunterLich: spriteSheet(mockBitmap()),
+    crackDecal: spriteSheet(mockBitmap())
   };
 }
 
@@ -94,7 +95,7 @@ function legacyGenerateChunk(
 
   const cellEntities = scatterBreakableWalls(mask, cells, chunkSize, cx, cy, rng.fork(0x8d00), {
     density: breakableWallDensity
-  });
+  }, assets.crackDecal);
 
   const entities = scatterActors(
     cells,

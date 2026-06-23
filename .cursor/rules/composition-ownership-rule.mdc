@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+
+# Composition & Systems: ownership rule
+
+This codebase uses an entity–component–system architecture. Keep behavior with the
+data it operates on. When adding or editing game logic, follow these rules.
+
+## 1. A component owns its own behavior
+Logic that reads or mutates a component's state belongs in (or next to) that
+component — not in a system, aggregator, or spawn helper.
+- ✅ "Does this strike hit a Strikeable / break a BreakableWall?" → resolver lives
+  with Strikeable / BreakableWall.
+- ✅ "What decal does this wall show?" → a `decals` getter on the wall component.
+- ❌ A system with an `if (entity.get(SomeComponent)) { ...component-specific logic }`
+  branch. That logic should be a method/getter on SomeComponent.
+
+## 2. Systems are thin "detect and dispatch"
+A cross-entity system detects an event spanning multiple entities and dispatches
+it. It must NOT contain per-component-type response logic.
+- ✅ loop → detect event → `entity.get(X)?.onEvent(ctx)`.
+- ❌ growing branches like `if (X) {...} else if (Y) {...}` inside the system.
+- A system naming a concrete component type is a smell unless it's only *querying*
+  that component and calling a method the component owns.
+
+## 3. Aggregators stay generic
+Functions that collect views across entities (`spritesFromEntities`,
+`decalsFromCellEntities`) must only ask each entity for a component and read a
+getter the component exposes. No type-specific construction logic inside the
+aggregator (no asset/texture choices, no field-by-field building).
+
+## 4. Wire dependencies at construction, not at use
+Assets/config a component needs should be passed into its constructor (via the
+spawn helper), not injected later by the caller that consumes its output.
+
+## Smell test before committing
+- Did I add component-specific logic to a system or aggregator? → move it to the component.
+- Does a system/aggregator name a concrete component type to do work *for* it? → invert it: the component exposes a method, the system calls it.
+- Is a component's data being assembled somewhere other than the component? → give the component a getter/method that owns it.

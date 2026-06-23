@@ -21,7 +21,8 @@ function mockAssets() {
     wallImage: w,
     paintings: [{ texture: w } as BlockSide],
     lampstand: w,
-    zombie: w
+    zombie: w,
+    crackDecal: w
   };
 }
 

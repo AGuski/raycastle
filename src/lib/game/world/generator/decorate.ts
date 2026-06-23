@@ -14,6 +14,7 @@ export interface DecorationAssets {
   zombie: SpriteSheet;
   garrison?: SpriteSheet;
   hunterLich?: SpriteSheet;
+  crackDecal: SpriteSheet;
 }
 
 export function createDecoratedBlock(

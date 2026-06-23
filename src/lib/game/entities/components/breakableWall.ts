@@ -2,6 +2,8 @@ import { CONFIG } from '../../../core/config';
 import { cast } from '../../../engine/raycaster';
 import { rayHitWallCell } from '../../../engine/rayHit';
 import { WallDirection } from '../../block';
+import { Decal } from '../../decal';
+import { SpriteSheet } from '../../spriteSheet';
 import { isOpenCell, MAP_EMPTY, MapCell } from '../../../types';
 import { Component, ComponentContext, PlayerView } from '../component';
 import { Entity } from '../entity';
@@ -15,7 +17,8 @@ export class BreakableWall implements Component {
 
   constructor(
     private readonly solidBlock: MapCell,
-    public readonly faces: [WallDirection, WallDirection]
+    public readonly faces: [WallDirection, WallDirection],
+    private readonly crackTexture: SpriteSheet
   ) {}
 
   onAttach(entity: Entity): void {
@@ -25,6 +28,17 @@ export class BreakableWall implements Component {
 
   anchoredAt(wx: number, wy: number): boolean {
     return this.anchor.wx === wx && this.anchor.wy === wy;
+  }
+
+  /** Crack overlays this wall projects onto its faces while still intact. */
+  get decals(): Decal[] {
+    if (this.destroyed) return [];
+    return this.faces.map((face) => ({
+      wx: this.anchor.wx,
+      wy: this.anchor.wy,
+      face,
+      texture: this.crackTexture
+    }));
   }
 
   destroy(ctx: ComponentContext): void {

@@ -13,12 +13,16 @@ import {
 } from './breakableWalls';
 import { SeededRng } from '../../../worldgen/seededRng';
 
-function mockBlock(): Block {
-  const texture = spriteSheet({
+function mockTexture() {
+  return spriteSheet({
     image: {} as HTMLImageElement,
     width: 1,
     height: 1
   });
+}
+
+function mockBlock(): Block {
+  const texture = mockTexture();
   return new Block([
     { texture },
     { texture },
@@ -113,7 +117,8 @@ describe('scatterBreakableWalls', () => {
       0,
       0,
       new SeededRng(42),
-      { density: 1 }
+      { density: 1 },
+      mockTexture()
     );
 
     expect(walls.length).toBeGreaterThan(0);
@@ -127,7 +132,7 @@ describe('scatterBreakableWalls', () => {
 describe('BreakableWall', () => {
   it('clears the anchored cell when destroyed', () => {
     const block = mockBlock();
-    const wall = spawnBreakableWall(5, 5, block, [3, 1]);
+    const wall = spawnBreakableWall(5, 5, block, [3, 1], mockTexture());
     let cell: typeof MAP_EMPTY | Block = block;
     const cellEntities: typeof wall[] = [wall];
 
@@ -166,7 +171,7 @@ describe('BreakableWall', () => {
 describe('resolveBreakableWallWeaponStrike', () => {
   it('destroys the wall struck along the player view ray', () => {
     const block = mockBlock();
-    const wall = spawnBreakableWall(5, 5, block, [3, 1]);
+    const wall = spawnBreakableWall(5, 5, block, [3, 1], mockTexture());
     let cell: typeof MAP_EMPTY | Block = block;
     const cellEntities = [wall];
 

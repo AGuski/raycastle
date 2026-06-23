@@ -1,4 +1,5 @@
 import { Block, WallDirection } from '../block';
+import { SpriteSheet } from '../spriteSheet';
 import { BreakableWall } from './components/breakableWall';
 import { CellAnchor } from './components/cellAnchor';
 import { Entity } from './entity';
@@ -8,9 +9,10 @@ export function spawnBreakableWall(
   wx: number,
   wy: number,
   solidBlock: Block,
-  faces: [WallDirection, WallDirection]
+  faces: [WallDirection, WallDirection],
+  crackTexture: SpriteSheet
 ): Entity {
   return new Entity(wx + 0.5, wy + 0.5)
     .add(new CellAnchor(wx, wy))
-    .add(new BreakableWall(solidBlock, faces));
+    .add(new BreakableWall(solidBlock, faces, crackTexture));
 }

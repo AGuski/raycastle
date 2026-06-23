@@ -1,6 +1,7 @@
 import { Block } from '../../block';
 import { Entity } from '../../entities/entity';
 import { spawnBreakableWall } from '../../entities/spawnBreakableWall';
+import { SpriteSheet } from '../../spriteSheet';
 import { MAP_EMPTY, MapCell } from '../../../types';
 import { localIndex } from '../chunk';
 import { SeededRng } from '../../../worldgen/seededRng';
@@ -23,7 +24,8 @@ export function scatterBreakableWalls(
   cx: number,
   cy: number,
   rng: SeededRng,
-  params: BreakableWallScatterParams
+  params: BreakableWallScatterParams,
+  crackTexture: SpriteSheet
 ): Entity[] {
   const candidates = findBreakableWallCandidates(mask, chunkSize);
   const walls: Entity[] = [];
@@ -38,7 +40,7 @@ export function scatterBreakableWalls(
     if (cell === MAP_EMPTY || !(cell instanceof Block)) continue;
 
     walls.push(
-      spawnBreakableWall(wx, wy, cell, breakableWallFaces(mask, lx, ly))
+      spawnBreakableWall(wx, wy, cell, breakableWallFaces(mask, lx, ly), crackTexture)
     );
   }
 
