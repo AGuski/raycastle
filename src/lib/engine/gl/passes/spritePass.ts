@@ -12,6 +12,7 @@ import { QuadBatch } from '../quadBatch';
 import { FrameContext, RenderPass } from '../renderPass';
 import fogGlsl from '../shaders/lib/fog.glsl?raw';
 import hitFlashGlsl from '../shaders/lib/hitFlash.glsl?raw';
+import deathDissolveGlsl from '../shaders/lib/deathDissolve.glsl?raw';
 import noiseGlsl from '../shaders/lib/noise.glsl?raw';
 import quadVert from '../shaders/quad.vert.glsl?raw';
 import spriteFrag from '../shaders/sprite.frag.glsl?raw';
@@ -32,6 +33,7 @@ interface SpriteStrip {
   texture: GLTexture;
   effect: SpriteEffect;
   hitFlash: number;
+  deathDissolve: number;
   /** When set, the strip is drawn as a rotated/translated quad (px corners). */
   quad?: [number, number, number, number, number, number, number, number];
 }
@@ -49,10 +51,11 @@ export class SpritePass implements RenderPass {
 
   init(gl: WebGL2RenderingContext): void {
     const programSources: Record<SpriteEffect, string> = {
-      none: combineShader(fogGlsl, hitFlashGlsl, volumetricGlsl, spriteFrag),
+      none: combineShader(fogGlsl, hitFlashGlsl, deathDissolveGlsl, volumetricGlsl, spriteFrag),
       darkMiasma: combineShader(
         fogGlsl,
         hitFlashGlsl,
+        deathDissolveGlsl,
         noiseGlsl,
         volumetricGlsl,
         spriteMiasmaFrag
@@ -160,6 +163,7 @@ export class SpritePass implements RenderPass {
 
       if (!isShadow) {
         gl.uniform1f(program.uniform('uHitFlash'), strip.hitFlash);
+        gl.uniform1f(program.uniform('uDeathDissolve'), strip.deathDissolve);
       }
 
       const texture = strip.texture;
@@ -169,7 +173,8 @@ export class SpritePass implements RenderPass {
         strips[index].texture.handle === texture.handle &&
         strips[index].kind === strip.kind &&
         (isShadow || strips[index].effect === strip.effect) &&
-        (isShadow || strips[index].hitFlash === strip.hitFlash)
+        (isShadow || strips[index].hitFlash === strip.hitFlash) &&
+        (isShadow || strips[index].deathDissolve === strip.deathDissolve)
       ) {
         const current = strips[index];
         if (current.quad) {
@@ -276,6 +281,7 @@ export class SpritePass implements RenderPass {
     const tex = getBitmapTexture(ctx.gl, sheet.bitmap);
     const effect = sprite.effect ?? 'none';
     const hitFlash = sprite.getHitFlash?.(world.deltaTime) ?? 0;
+    const deathDissolve = sprite.getDeathDissolve?.(world.deltaTime) ?? 0;
     const animTime = sprite.animationTime ?? world.deltaTime;
     const strips: SpriteStrip[] = [];
 
@@ -335,7 +341,8 @@ export class SpritePass implements RenderPass {
             depth: transformY,
             texture: tex,
             effect,
-            hitFlash: 0
+            hitFlash: 0,
+            deathDissolve: 0
           });
         }
 
@@ -349,7 +356,8 @@ export class SpritePass implements RenderPass {
           depth: transformY,
           texture: tex,
           effect,
-          hitFlash
+          hitFlash,
+          deathDissolve
         });
         continue;
       }
@@ -383,7 +391,8 @@ export class SpritePass implements RenderPass {
             ...transformCorner(sx1, syBot, pivotX, pivotY, scale, cos, sin),
             ...transformCorner(sx0, syBot, pivotX, pivotY, scale, cos, sin)
           ] as SpriteStrip['quad'],
-          hitFlash: 0
+          hitFlash: 0,
+          deathDissolve: 0
         });
       }
 
@@ -398,6 +407,7 @@ export class SpritePass implements RenderPass {
         texture: tex,
         effect,
         hitFlash,
+        deathDissolve,
         quad: [
           ...transformCorner(x0, yTop, pivotX, pivotY, scale, cos, sin),
           ...transformCorner(x1, yTop, pivotX, pivotY, scale, cos, sin),

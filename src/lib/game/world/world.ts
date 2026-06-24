@@ -40,6 +40,7 @@ export class World {
   public readonly ceilingTexture: Bitmap;
   public light: number;
   public deltaTime = 0;
+  damagePlayer?: (amount: number) => void;
 
   readonly wallImage: Bitmap;
   private readonly wallSheet: SpriteSheet;
@@ -255,6 +256,10 @@ export class World {
 
   removeCellEntity(entity: Entity): void {
     this.chunkManager.removeCellEntity(entity);
+  }
+
+  removeEntity(entity: Entity): void {
+    this.entityManager.remove(entity);
   }
 
   update(seconds: number, player: PlayerView): void {

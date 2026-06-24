@@ -29,6 +29,7 @@ export class PostPass implements RenderPass {
 
     program.use();
     gl.uniform2f(program.uniform('uResolution'), ctx.width, ctx.height);
+    gl.uniform1f(program.uniform('uHurtVignette'), ctx.player.hurtVignette);
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

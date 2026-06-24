@@ -1,9 +1,10 @@
 import { CONFIG } from '../../../core/config';
 import { hasLineOfSight } from '../../../engine/lineOfSight';
-import { Point } from '../../../types';
+import { rollDamage } from '../../combat/damageRoll';
 import { isInStrikeCone } from '../../systems/weaponStrike';
 import { Component, ComponentContext } from '../component';
 import { Entity } from '../entity';
+import { Damageable } from './damageable';
 
 /** Weapon-hit response: flash, knockback, and per-swing tracking. */
 export class Strikeable implements Component {
@@ -30,7 +31,7 @@ export class Strikeable implements Component {
   }
 
   /** Begin a smooth ease-out shove away from a point. */
-  applyKnockback(from: Point, distance: number): void {
+  applyKnockback(from: { x: number; y: number }, distance: number): void {
     const dx = this.entity.x - from.x;
     const dy = this.entity.y - from.y;
     const dist = Math.hypot(dx, dy);
@@ -50,6 +51,16 @@ export class Strikeable implements Component {
     if (time >= this._hitFlashUntil) return 0;
     const remaining = this._hitFlashUntil - time;
     return remaining / CONFIG.weapon.strike.hitFlashDuration;
+  }
+
+  /** Full weapon-hit response: flash, knockback, and damage. */
+  receiveWeaponHit(ctx: ComponentContext, swingId: number): void {
+    this.markHit(swingId, ctx.time);
+    this.applyKnockback(ctx.player, CONFIG.weapon.strike.knockbackDistance);
+
+    const { baseDamage, damageLuck } = CONFIG.weapon.strike;
+    const amount = rollDamage(baseDamage, damageLuck);
+    this.entity.get(Damageable)?.takeDamage(ctx, amount);
   }
 
   update(ctx: ComponentContext): void {
@@ -88,17 +99,19 @@ export function resolveActorWeaponStrike(
   ctx: ComponentContext,
   entities: Iterable<Entity>
 ): void {
-  const { player, time, world } = ctx;
+  const { player, world } = ctx;
 
   for (const entity of entities) {
     const strikeable = entity.get(Strikeable);
     if (!strikeable) continue;
+
+    const damageable = entity.get(Damageable);
+    if (damageable && !damageable.isAlive) continue;
+
     if (strikeable.wasHitBySwing(player.swingId)) continue;
     if (!isInStrikeCone(player, entity)) continue;
     if (!hasLineOfSight(world, player, entity)) continue;
 
-    strikeable.markHit(player.swingId, time);
-    strikeable.applyKnockback(player, CONFIG.weapon.strike.knockbackDistance);
-    console.log('[strike] hit actor', { x: entity.x, y: entity.y });
+    strikeable.receiveWeaponHit(ctx, player.swingId);
   }
 }

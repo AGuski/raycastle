@@ -2,6 +2,7 @@ import { CONFIG } from '../../../core/config';
 import { hasLineOfSight } from '../../../engine/lineOfSight';
 import { Component, ComponentContext } from '../component';
 import { Entity } from '../entity';
+import { Damageable } from './damageable';
 import { Strikeable } from './strikeable';
 
 export interface ChaseMovementConfig {
@@ -20,6 +21,9 @@ export class ChaseMovement implements Component {
   }
 
   update(ctx: ComponentContext): void {
+    const damageable = this.entity.get(Damageable);
+    if (damageable && !damageable.isAlive) return;
+
     if (this.entity.get(Strikeable)?.isKnockedBack()) return;
 
     const target = ctx.player;

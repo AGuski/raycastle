@@ -3,6 +3,7 @@
 	import '../style.css';
 	import { startGame } from '../main';
 	import ExperimentalMenu from './ExperimentalMenu.svelte';
+	import PlayerHud from './PlayerHud.svelte';
 
 	let canvas: HTMLCanvasElement;
 
@@ -14,4 +15,5 @@
 </script>
 
 <canvas id="display" width="1" height="1" bind:this={canvas}></canvas>
+<PlayerHud />
 <ExperimentalMenu />

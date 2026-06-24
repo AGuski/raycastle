@@ -4,6 +4,7 @@ import { Entity } from '../entity';
 import { Sprite } from '../sprite';
 import { SpriteEffect } from '../spriteEffect';
 import { SpriteAnimator } from '../spriteAnimator';
+import { Damageable } from './damageable';
 import { Strikeable } from './strikeable';
 
 /** Produces the structural Sprite view the renderer already consumes. */
@@ -51,11 +52,16 @@ export class Renderable implements Component {
       animationTime: this.animationTime,
       animator: this.animator,
       effect: this.effect,
-      getHitFlash: (t) => this.resolveHitFlash(t)
+      getHitFlash: (t) => this.resolveHitFlash(t),
+      getDeathDissolve: (t) => this.resolveDeathDissolve(t)
     };
   }
 
   private resolveHitFlash(time: number): number {
     return this.entity.get(Strikeable)?.getHitFlash(time) ?? 0;
+  }
+
+  private resolveDeathDissolve(time: number): number {
+    return this.entity.get(Damageable)?.getDeathProgress(time) ?? 0;
   }
 }

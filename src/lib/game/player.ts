@@ -5,10 +5,16 @@ import { World } from './world/index';
 
 export class Player {
   readonly weapon: Bitmap;
+  readonly maxHealth = CONFIG.player.maxHealth;
+  health: number;
+  /** 0–1 screen hurt vignette intensity. */
+  hurtVignette = 0;
   private _paces = 0;
   private _swingTime = 0;
   private _swingId = 0;
   private _sheathed = false;
+  private _hurtVignetteAge = 0;
+  private _hurtActive = false;
 
   get paces(): number {
     return this._paces;
@@ -36,6 +42,13 @@ export class Player {
     weapon: Bitmap
   ) {
     this.weapon = weapon;
+    this.health = CONFIG.player.maxHealth;
+  }
+
+  takeDamage(amount: number): void {
+    this.health -= amount;
+    this._hurtVignetteAge = 0;
+    this._hurtActive = true;
   }
 
   rotate(angle: number): void {
@@ -49,6 +62,28 @@ export class Player {
     this._paces += Math.hypot(dx, dy);
   }
 
+  private updateHurtVignette(seconds: number): void {
+    if (!this._hurtActive) return;
+
+    this._hurtVignetteAge += seconds;
+    const { fadeIn, fadeOut } = CONFIG.player.hurtVignette;
+
+    if (this._hurtVignetteAge <= fadeIn) {
+      this.hurtVignette = this._hurtVignetteAge / fadeIn;
+      return;
+    }
+
+    const decayT = (this._hurtVignetteAge - fadeIn) / fadeOut;
+    if (decayT >= 1) {
+      this.hurtVignette = 0;
+      this._hurtActive = false;
+      return;
+    }
+
+    const easeOut = 1 - decayT * decayT;
+    this.hurtVignette = easeOut;
+  }
+
   update(
     controls: ControlStates,
     map: World,
@@ -57,6 +92,8 @@ export class Player {
     attack = false,
     sheathToggle = false
   ): void {
+    this.updateHurtVignette(seconds);
+
     if (turnDelta !== 0) this.rotate(turnDelta);
 
     if (sheathToggle) {
@@ -97,3 +134,4 @@ export class Player {
     this.move((cos * forward - sin * strafe) * distance, (sin * forward + cos * strafe) * distance, map);
   }
 }
+

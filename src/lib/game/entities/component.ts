@@ -18,6 +18,10 @@ export interface GameWorld extends RaycastWorld {
   setCell?(wx: number, wy: number, cell: MapCell): void;
   /** Remove a smart-cell entity after it is destroyed. */
   removeCellEntity?(entity: Entity): void;
+  /** Remove a dynamic actor entity (e.g. after death dissolve). */
+  removeEntity?(entity: Entity): void;
+  /** Apply damage to the player from an enemy attack. */
+  damagePlayer?(amount: number): void;
 }
 
 /** Per-tick context shared by all components and systems. */

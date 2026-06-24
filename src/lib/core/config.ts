@@ -7,6 +7,22 @@ export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(
 export const CONFIG = {
   playerStart: { x: 0.5, y: 0.5, direction: Math.PI * 0.3 },
   walkSpeed: 3,
+  /** Player health and hurt feedback. */
+  player: {
+    maxHealth: 100,
+    hurtVignette: {
+      /** Seconds to reach full intensity after a hit. */
+      fadeIn: 0.08,
+      /** Seconds to ease back to zero. */
+      fadeOut: 1.8
+    }
+  },
+  combat: {
+    /** Seconds the death dissolve plays before an entity is removed. */
+    deathDissolveDuration: 0.6,
+    /** Default luck spread for enemy attacks. */
+    defaultDamageLuck: 0.15
+  },
   /** Player contact sensor; detect radius is stopRadius + detectMargin. */
   contact: {
     /** Chase movement halts when closer than this (world units). */
@@ -63,7 +79,11 @@ export const CONFIG = {
       /** How far actors are shoved away from the player on hit (world units). */
       knockbackDistance: 0.5,
       /** Seconds over which knockback distance is applied (ease-out). */
-      knockbackDuration: 0.12
+      knockbackDuration: 0.12,
+      /** Average weapon damage per hit. */
+      baseDamage: 10,
+      /** Luck spread: multiplier in [1 - luck, 1 + luck]. */
+      damageLuck: 0.25
     }
   },
   fixedTimestep: 1 / 60,
@@ -114,7 +134,8 @@ export const CONFIG = {
       sightRange: 18,
       proximityRadius: 1.5,
       chaseOnSight: true,
-      animationSpeed: 0.7
+      animationSpeed: 0.7,
+      combat: { maxHealth: 35, damage: 8, attackInterval: 1.6 }
     },
     garrison: {
       speed: 0.9,
@@ -126,7 +147,8 @@ export const CONFIG = {
         frequency: 1.6,
         swayAngle: 0.1,
         bobHeight: 0.05
-      }
+      },
+      combat: { maxHealth: 35, damage: 8, attackInterval: 1.6 }
     },
     hunterLich: {
       speed: 0.65,
@@ -138,21 +160,24 @@ export const CONFIG = {
       hover: {
         frequency: 0.7,
         amplitude: 0.04
-      }
+      },
+      combat: { maxHealth: 90, damage: 18, attackInterval: 1.1 }
     },
     warden: {
       speed: 0.45,
       sightRange: 18,
       proximityRadius: 1.5,
       chaseOnSight: true,
-      animationSpeed: 0.45
+      animationSpeed: 0.45,
+      combat: { maxHealth: 100, damage: 22, attackInterval: 2.4 }
     },
     skitterling: {
       speed: 2,
       sightRange: 14,
       proximityRadius: 1.5,
       chaseOnSight: true,
-      animationSpeed: 1.35
+      animationSpeed: 1.35,
+      combat: { maxHealth: 10, damage: 3, attackInterval: 0.45 }
     }
   },
   textures: {

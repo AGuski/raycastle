@@ -1,7 +1,9 @@
 import { SpriteSheet } from '../spriteSheet';
 import { SpriteEffect } from './spriteEffect';
+import { Attacker } from './components/attacker';
 import { ChaseMovement } from './components/chaseMovement';
 import { ContactSensor } from './components/contactSensor';
+import { Damageable } from './components/damageable';
 import { Renderable } from './components/renderable';
 import { Strikeable } from './components/strikeable';
 import { Entity } from './entity';
@@ -11,6 +13,14 @@ import {
   HoverAnimator,
   HoverConfig
 } from './spriteAnimator';
+
+/** Health, contact damage, and attack cadence for hostile actors. */
+export interface ActorCombatConfig {
+  maxHealth: number;
+  damage: number;
+  attackInterval: number;
+  damageLuck?: number;
+}
 
 /** Tuning data for composing a moving actor entity at spawn time. */
 export interface ActorSpawnConfig {
@@ -26,6 +36,8 @@ export interface ActorSpawnConfig {
   hover?: HoverConfig;
   /** Optional fragment shader applied when this actor is drawn. */
   spriteEffect?: SpriteEffect;
+  /** Health, contact damage, and attack cadence. */
+  combat?: ActorCombatConfig;
 }
 
 export interface SpawnActorOptions {
@@ -52,6 +64,17 @@ export function spawnActor(
 
   if (options.strikeable) {
     entity.add(new Strikeable());
+  }
+
+  if (config.combat) {
+    entity.add(new Damageable(config.combat.maxHealth));
+    entity.add(
+      new Attacker({
+        damage: config.combat.damage,
+        attackInterval: config.combat.attackInterval,
+        damageLuck: config.combat.damageLuck
+      })
+    );
   }
 
   if (config.chaseOnSight) {

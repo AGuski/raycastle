@@ -13,6 +13,13 @@ export class EntityManager {
     this.entities.push(...entities);
   }
 
+  remove(entity: Entity): void {
+    const index = this.entities.indexOf(entity);
+    if (index === -1) return;
+    this.entities.splice(index, 1);
+    entity.dispose();
+  }
+
   update(seconds: number, player: PlayerView, world: GameWorld & { deltaTime: number }): void {
     const ctx = {
       dt: seconds,

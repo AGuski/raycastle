@@ -4,6 +4,7 @@ import { AssetManager } from './engine/assets';
 import { GameLoop } from './engine/gameLoop';
 import { Renderer } from './engine/renderer';
 import { mountStatsOverlay } from './engine/statsOverlay';
+import { publishHud } from './game/hudState';
 import { Player } from './game/player';
 import { World, loadLevelRecipe } from './game/world';
 import weaponMaceImg from './assets/mace_weapon_1.png';
@@ -35,6 +36,7 @@ export async function startGame(canvas: HTMLCanvasElement): Promise<void> {
 
   const spawn = world.findSafeSpawn();
   const player = new Player(spawn.x, spawn.y, spawn.direction, weapon);
+  world.damagePlayer = (amount) => player.takeDamage(amount);
   world.ensureAround(player.x, player.y, { x: player.x, y: player.y });
 
   const input = new Input(canvas);
@@ -55,6 +57,7 @@ export async function startGame(canvas: HTMLCanvasElement): Promise<void> {
         input.consumeSheathToggle()
       );
       world.runSystems(playerView(player));
+      publishHud(player);
     },
     render() {
       renderer.render(player, world);

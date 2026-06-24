@@ -35,5 +35,10 @@ void main() {
     color *= volumetricLight(grad, tex.rgb, uTime);
   }
 
-  outColor = vec4(applyFog(applyHitFlash(color, uHitFlash), vDepth), tex.a);
+  color = applyHitFlash(color, uHitFlash);
+  if (uDeathDissolve > 0.0) {
+    color = applyDeathDissolve(color, tex.a, uDeathDissolve);
+  }
+
+  outColor = vec4(applyFog(color, vDepth), tex.a);
 }

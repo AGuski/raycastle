@@ -10,7 +10,7 @@ export function runSystems(
   ctx: ComponentContext,
   entities: Iterable<Entity>
 ): void {
-  resolveContactEvents(entities);
+  resolveContactEvents();
 
   if (!isWeaponStrikeFrame(ctx.player)) return;
 
