@@ -27,6 +27,8 @@ function toWorldGenParams(
     enemyPlayerClearRadius: params.enemyPlayerClearRadius,
     garrisonDensity: params.garrisonDensity,
     hunterLichDensity: params.hunterLichDensity,
+    wardenDensity: params.wardenDensity,
+    skitterlingDensity: params.skitterlingDensity,
     borderPortalCount: params.borderPortalCount,
     breakableWallDensity: params.breakableWallDensity,
     paintingVariantCount

@@ -53,6 +53,8 @@ function mockAssets(): DecorationAssets {
     zombie: spriteSheet(mockBitmap()),
     garrison: spriteSheet(mockBitmap()),
     hunterLich: spriteSheet(mockBitmap()),
+    warden: spriteSheet(mockBitmap()),
+    skitterling: spriteSheet(mockBitmap()),
     crackDecal: spriteSheet(mockBitmap())
   };
 }
@@ -78,6 +80,8 @@ function legacyGenerateChunk(
     enemyPlayerClearRadius,
     garrisonDensity,
     hunterLichDensity,
+    wardenDensity,
+    skitterlingDensity,
     borderPortalCount,
     breakableWallDensity
   } = PARAMS;
@@ -133,6 +137,32 @@ function legacyGenerateChunk(
       assets.hunterLich
     )
   );
+  entities.push(
+    ...scatterActors(
+      cells,
+      chunkSize,
+      cx,
+      cy,
+      rng.fork(0x7d03),
+      assets,
+      CONFIG.actors.warden,
+      { enemyDensity: wardenDensity, clearRadius: enemyPlayerClearRadius, ...scatterExclude },
+      assets.warden
+    )
+  );
+  entities.push(
+    ...scatterActors(
+      cells,
+      chunkSize,
+      cx,
+      cy,
+      rng.fork(0x8312),
+      assets,
+      CONFIG.actors.skitterling,
+      { enemyDensity: skitterlingDensity, clearRadius: enemyPlayerClearRadius, ...scatterExclude },
+      assets.skitterling
+    )
+  );
 
   return { chunk: new Chunk(cx, cy, cells, staticEntities, cellEntities), entities };
 }
@@ -173,6 +203,8 @@ function entitySig(e: Entity, assets: DecorationAssets): string {
     if (tex === assets.zombie) kind = 'zombie';
     else if (tex === assets.garrison) kind = 'garrison';
     else if (tex === assets.hunterLich) kind = 'hunterLich';
+    else if (tex === assets.warden) kind = 'warden';
+    else if (tex === assets.skitterling) kind = 'skitterling';
     else kind = 'actor?';
   } else if (tex === assets.lampstand) {
     kind = 'lamp';

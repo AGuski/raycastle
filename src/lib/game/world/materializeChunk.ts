@@ -37,6 +37,10 @@ function actorConfigFor(kind: EntityKind): ActorSpawnConfig {
       return CONFIG.actors.garrison;
     case 'hunterLich':
       return CONFIG.actors.hunterLich;
+    case 'warden':
+      return CONFIG.actors.warden;
+    case 'skitterling':
+      return CONFIG.actors.skitterling;
     default:
       throw new Error(`Not an actor kind: ${kind}`);
   }
@@ -50,6 +54,10 @@ function actorTextureFor(kind: EntityKind, assets: DecorationAssets): SpriteShee
       return assets.garrison ?? assets.zombie;
     case 'hunterLich':
       return assets.hunterLich ?? assets.zombie;
+    case 'warden':
+      return assets.warden ?? assets.zombie;
+    case 'skitterling':
+      return assets.skitterling ?? assets.zombie;
     default:
       throw new Error(`Not an actor kind: ${kind}`);
   }
@@ -95,6 +103,8 @@ export function materializeChunk(
       case 'zombie':
       case 'garrison':
       case 'hunterLich':
+      case 'warden':
+      case 'skitterling':
         entities.push(
           createStrikeableActor(
             actorTextureFor(spec.kind, assets),

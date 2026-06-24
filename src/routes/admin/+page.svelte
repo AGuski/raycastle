@@ -40,14 +40,18 @@
 		lamp: '#ffd24a',
 		zombie: '#5fd35f',
 		garrison: '#4aa3ff',
-		hunterLich: '#c77dff'
+		hunterLich: '#c77dff',
+		warden: '#d4a574',
+		skitterling: '#e8c9a8'
 	};
 
 	const ENTITY_LABELS: Record<Exclude<EntityKind, 'breakableWall'>, string> = {
 		lamp: 'Lamp',
 		zombie: 'Zombie',
 		garrison: 'Garrison',
-		hunterLich: 'Hunter Lich'
+		hunterLich: 'Hunter Lich',
+		warden: 'Warden',
+		skitterling: 'Skitterling'
 	};
 
 	type ActorKind = keyof typeof ENTITY_COLORS;
@@ -56,7 +60,9 @@
 		lamp: false,
 		zombie: false,
 		garrison: false,
-		hunterLich: false
+		hunterLich: false,
+		warden: false,
+		skitterling: false
 	});
 
 	function params() {

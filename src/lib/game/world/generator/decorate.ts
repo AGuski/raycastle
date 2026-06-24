@@ -14,6 +14,8 @@ export interface DecorationAssets {
   zombie: SpriteSheet;
   garrison?: SpriteSheet;
   hunterLich?: SpriteSheet;
+  warden?: SpriteSheet;
+  skitterling?: SpriteSheet;
   crackDecal: SpriteSheet;
 }
 

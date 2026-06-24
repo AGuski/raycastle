@@ -16,6 +16,8 @@ export type EntityKind =
   | 'zombie'
   | 'garrison'
   | 'hunterLich'
+  | 'warden'
+  | 'skitterling'
   | 'breakableWall';
 
 /** Cardinal wall-face indices matching the game Block sides array. */
@@ -64,6 +66,8 @@ export interface WorldGenParams {
   enemyPlayerClearRadius: number;
   garrisonDensity: number;
   hunterLichDensity: number;
+  wardenDensity: number;
+  skitterlingDensity: number;
   borderPortalCount: { min: number; max: number };
   breakableWallDensity: number;
   /** Number of painting variants; must equal assets.paintings.length. */

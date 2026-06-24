@@ -23,6 +23,8 @@ import lampstandImg from '../../assets/lampstand_1_large.png';
 import zombieImg from '../../assets/Zombie_Test_Sprite.png';
 import garrisonImg from '../../assets/mr-garrison.png';
 import hunterLichImg from '../../assets/hunter_lich_1.png';
+import wardenImg from '../../assets/warden_sprites_1-sheet.png';
+import skitterlingImg from '../../assets/skitterling_sprites_1-sheet.png';
 import floorWoodImg from '../../assets/floor_wood_1.png';
 import ceilingWoodImg from '../../assets/wooden_panel_ceiling_1.png';
 import wallCracksImg from '../../assets/wall_cracks_decal_1.png';
@@ -45,6 +47,8 @@ export class World {
   private readonly zombie: SpriteSheet;
   private readonly garrison: SpriteSheet;
   private readonly hunterLich: SpriteSheet;
+  private readonly warden: SpriteSheet;
+  private readonly skitterling: SpriteSheet;
   private readonly crackDecal: SpriteSheet;
   private readonly paintings: BlockSide[];
   private readonly boundaryBlock: Block;
@@ -133,6 +137,22 @@ export class World {
         textures.hunterLich.height
       )
     );
+    this.warden = spriteSheet(
+      assets.createBitmap(
+        wardenImg,
+        textures.warden.width,
+        textures.warden.height
+      ),
+      textures.warden.frames
+    );
+    this.skitterling = spriteSheet(
+      assets.createBitmap(
+        skitterlingImg,
+        textures.skitterling.width,
+        textures.skitterling.height
+      ),
+      textures.skitterling.frames
+    );
     this.crackDecal = spriteSheet(
       assets.createBitmap(
         wallCracksImg,
@@ -170,6 +190,8 @@ export class World {
         zombie: this.zombie,
         garrison: this.garrison,
         hunterLich: this.hunterLich,
+        warden: this.warden,
+        skitterling: this.skitterling,
         crackDecal: this.crackDecal
       },
       this.boundaryBlock,
@@ -200,6 +222,8 @@ export class World {
       this.zombie.bitmap,
       this.garrison.bitmap,
       this.hunterLich.bitmap,
+      this.warden.bitmap,
+      this.skitterling.bitmap,
       this.floorTexture,
       this.ceilingTexture,
       this.crackDecal.bitmap,

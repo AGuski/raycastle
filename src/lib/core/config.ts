@@ -102,6 +102,8 @@ export const CONFIG = {
     enemyPlayerClearRadius: 4,
     garrisonDensity: 0.002,
     hunterLichDensity: 0.008,
+    wardenDensity: 0.006,
+    skitterlingDensity: 0.015,
     borderPortalCount: { min: 1, max: 3 },
     /** Per-candidate probability of placing a breakable wall in a chunk. */
     breakableWallDensity: 0.2
@@ -137,6 +139,20 @@ export const CONFIG = {
         frequency: 0.7,
         amplitude: 0.04
       }
+    },
+    warden: {
+      speed: 0.45,
+      sightRange: 18,
+      proximityRadius: 1.5,
+      chaseOnSight: true,
+      animationSpeed: 0.45
+    },
+    skitterling: {
+      speed: 1.05,
+      sightRange: 18,
+      proximityRadius: 1.5,
+      chaseOnSight: true,
+      animationSpeed: 1.35
     }
   },
   textures: {
@@ -151,6 +167,8 @@ export const CONFIG = {
     zombie: { width: 3072, height: 512, frames: 6 },
     garrison: { width: 1024, height: 1024 },
     hunterLich: { width: 1024, height: 1024 },
+    warden: { width: 1024, height: 256, frames: 4 },
+    skitterling: { width: 768, height: 256, frames: 3 },
     floorWood: { width: 1024, height: 1024 },
     ceilingWood: { width: 1024, height: 1024 },
     wallCracksDecal: { width: 1024, height: 1024 }

@@ -78,6 +78,8 @@ export function generateChunkData(
     enemyPlayerClearRadius,
     garrisonDensity,
     hunterLichDensity,
+    wardenDensity,
+    skitterlingDensity,
     borderPortalCount,
     breakableWallDensity,
     paintingVariantCount
@@ -195,6 +197,34 @@ export function generateChunkData(
     enemyPlayerClearRadius,
     exclude,
     (wx, wy) => ({ kind: 'hunterLich', wx, wy }),
+    entities
+  );
+
+  // Warden — fork(0x7d03), dynamic bucket.
+  scatterOnOpen(
+    tiles,
+    chunkSize,
+    cx,
+    cy,
+    rng.fork(0x7d03),
+    wardenDensity,
+    enemyPlayerClearRadius,
+    exclude,
+    (wx, wy) => ({ kind: 'warden', wx, wy }),
+    entities
+  );
+
+  // Skitterling — fork(0x8312), dynamic bucket.
+  scatterOnOpen(
+    tiles,
+    chunkSize,
+    cx,
+    cy,
+    rng.fork(0x8312),
+    skitterlingDensity,
+    enemyPlayerClearRadius,
+    exclude,
+    (wx, wy) => ({ kind: 'skitterling', wx, wy }),
     entities
   );
 
