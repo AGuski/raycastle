@@ -148,8 +148,8 @@ export const CONFIG = {
       animationSpeed: 0.45
     },
     skitterling: {
-      speed: 1.05,
-      sightRange: 18,
+      speed: 2,
+      sightRange: 14,
       proximityRadius: 1.5,
       chaseOnSight: true,
       animationSpeed: 1.35
