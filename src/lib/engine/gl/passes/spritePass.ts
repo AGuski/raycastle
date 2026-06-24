@@ -1,4 +1,5 @@
 import { CONFIG } from '../../../core/config';
+import { experimental } from '../../../core/experimental';
 import { Sprite } from '../../../game/entities/sprite';
 import { SpriteEffect } from '../../../game/entities/spriteEffect';
 import { isIdentityTransform } from '../../../game/entities/spriteAnimator';
@@ -16,6 +17,7 @@ import quadVert from '../shaders/quad.vert.glsl?raw';
 import spriteFrag from '../shaders/sprite.frag.glsl?raw';
 import spriteMiasmaFrag from '../shaders/spriteMiasma.frag.glsl?raw';
 import spriteShadowFrag from '../shaders/spriteShadow.frag.glsl?raw';
+import volumetricGlsl from '../shaders/lib/volumetric.glsl?raw';
 
 type SpriteStripKind = 'shadow' | 'sprite';
 
@@ -47,8 +49,14 @@ export class SpritePass implements RenderPass {
 
   init(gl: WebGL2RenderingContext): void {
     const programSources: Record<SpriteEffect, string> = {
-      none: combineShader(fogGlsl, hitFlashGlsl, spriteFrag),
-      darkMiasma: combineShader(fogGlsl, hitFlashGlsl, noiseGlsl, spriteMiasmaFrag)
+      none: combineShader(fogGlsl, hitFlashGlsl, volumetricGlsl, spriteFrag),
+      darkMiasma: combineShader(
+        fogGlsl,
+        hitFlashGlsl,
+        noiseGlsl,
+        volumetricGlsl,
+        spriteMiasmaFrag
+      )
     };
 
     for (const effect of SPRITE_EFFECTS) {
@@ -136,10 +144,18 @@ export class SpritePass implements RenderPass {
           program.uniform('uBlurRadius'),
           CONFIG.spriteShadow.blurRadius
         );
-      } else if (strip.effect === 'darkMiasma') {
+      } else {
+        // Baseline volumetric relight, applied to every sprite program (not an
+        // effect). The shader no-ops when uVolumetric is 0.
         gl.uniform1f(program.uniform('uTime'), ctx.time);
-        gl.uniform1f(program.uniform('uLayerSeed'), 0);
-        gl.uniform1f(program.uniform('uSmokeOnly'), 0);
+        gl.uniform1f(
+          program.uniform('uVolumetric'),
+          experimental.volumetricSprites ? 1 : 0
+        );
+        if (strip.effect === 'darkMiasma') {
+          gl.uniform1f(program.uniform('uLayerSeed'), 0);
+          gl.uniform1f(program.uniform('uSmokeOnly'), 0);
+        }
       }
 
       if (!isShadow) {

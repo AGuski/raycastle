@@ -1,10 +1,12 @@
 import { CONFIG } from '../../../core/config';
+import { experimental } from '../../../core/experimental';
 import { swingTransformAt } from '../../../game/weaponSwing';
 import { combineShader, linkProgram } from '../glUtils';
 import { getBitmapTexture } from '../glTexture';
 import { Program } from '../program';
 import { QuadBatch } from '../quadBatch';
 import { FrameContext, RenderPass } from '../renderPass';
+import volumetricGlsl from '../shaders/lib/volumetric.glsl?raw';
 import weaponVert from '../shaders/weapon.vert.glsl?raw';
 import weaponFrag from '../shaders/weapon.frag.glsl?raw';
 
@@ -16,7 +18,7 @@ export class WeaponPass implements RenderPass {
     const handle = linkProgram(
       gl,
       combineShader(weaponVert),
-      combineShader(weaponFrag)
+      combineShader(volumetricGlsl, weaponFrag)
     );
     this.program = new Program(gl, handle);
     this.batch = new QuadBatch(
@@ -60,6 +62,12 @@ export class WeaponPass implements RenderPass {
     const tex = getBitmapTexture(gl, weapon);
     tex.bind(0);
     gl.uniform1i(program.uniform('uTexture'), 0);
+    gl.uniform2f(program.uniform('uTexSize'), tex.width, tex.height);
+    gl.uniform1f(
+      program.uniform('uVolumetric'),
+      experimental.volumetricWeapon ? 1 : 0
+    );
+    gl.uniform1f(program.uniform('uTime'), ctx.time);
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

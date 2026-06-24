@@ -5,6 +5,8 @@ uniform ivec2 uTexSize;
 flat in float vDepth;
 flat in float vTexColumn;
 uniform sampler2D uZBuffer;
+uniform float uTime;
+uniform float uVolumetric; // >0.5 applies the baseline volumetric relight
 in float vTexRow;
 
 out vec4 outColor;
@@ -27,5 +29,11 @@ void main() {
     discard;
   }
 
-  outColor = vec4(applyFog(applyHitFlash(tex.rgb, uHitFlash), vDepth), tex.a);
+  vec3 color = tex.rgb;
+  if (uVolumetric > 0.5) {
+    vec2 grad = volLumaGradTexel(uTexture, uTexSize, texCol, row);
+    color *= volumetricLight(grad, tex.rgb, uTime);
+  }
+
+  outColor = vec4(applyFog(applyHitFlash(color, uHitFlash), vDepth), tex.a);
 }

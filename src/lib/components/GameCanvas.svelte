@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import '../style.css';
 	import { startGame } from '../main';
+	import ExperimentalMenu from './ExperimentalMenu.svelte';
 
 	let canvas: HTMLCanvasElement;
 
@@ -13,3 +14,4 @@
 </script>
 
 <canvas id="display" width="1" height="1" bind:this={canvas}></canvas>
+<ExperimentalMenu />

@@ -6,6 +6,7 @@ uniform sampler2D uZBuffer;
 uniform float uTime;
 uniform float uLayerSeed;
 uniform float uSmokeOnly;
+uniform float uVolumetric; // >0.5 relights the lich BODY (not the smoke)
 
 flat in float vDepth;
 flat in float vTexColumn;
@@ -160,6 +161,14 @@ void main() {
   float bodyLuma = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
   float darkMask = 1.0 - smoothstep(0.0, 0.32, bodyLuma);
   color = mix(color, abyss, clamp(darkMask * lift * bodySink, 0.0, 1.0));
+
+  // Relight the lich's BODY with the shared baseline (skull/eyes stay emissive);
+  // the smoke and halo below are intentionally left flat.
+  if (uVolumetric > 0.5) {
+    int brow = clamp(int(frow), 0, uTexSize.y - 1);
+    vec2 grad = volLumaGradTexel(uTexture, uTexSize, int(vTexColumn), brow);
+    color *= volumetricLight(grad, tex.rgb, uTime);
+  }
 
   color = mix(color, smokeColor, smoke);
 
