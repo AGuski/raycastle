@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { CONFIG } from '../../core/config';
 import { contactDetectRadius, distanceBetween } from '../contact';
 import { Block } from '../block';
@@ -101,7 +101,7 @@ describe('spawnActor', () => {
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
-    });
+    }, { randomizeSpeed: false });
 
     tickActor(actor, 1, { x: 3.5, y: 0.5 }, world);
 
@@ -120,7 +120,7 @@ describe('spawnActor', () => {
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
-    });
+    }, { randomizeSpeed: false });
 
     tickActor(actor, 1, { x: 3.5, y: 0.5 }, world);
 
@@ -140,7 +140,7 @@ describe('spawnActor', () => {
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
-    });
+    }, { randomizeSpeed: false });
     const target = { x: 0.5, y: 2.5 };
 
     tickActor(actor, 1, target, world);
@@ -163,7 +163,7 @@ describe('spawnActor', () => {
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
-    });
+    }, { randomizeSpeed: false });
 
     tickActor(actor, 1, { x: 0.5, y: 1 }, world);
 
@@ -219,7 +219,7 @@ describe('spawnActor', () => {
       sightRange: 10,
       proximityRadius: 1,
       chaseOnSight: true
-    });
+    }, { randomizeSpeed: false });
 
     tickActor(actor, 0.5, { x: 3.5, y: 0.5 }, world);
 
@@ -237,7 +237,7 @@ describe('spawnActor', () => {
       proximityRadius: 1,
       chaseOnSight: true,
       animationSpeed: 2
-    });
+    }, { randomizeSpeed: false });
 
     tickActor(actor, 0.5, { x: 3.5, y: 0.5 }, world);
 
@@ -260,5 +260,26 @@ describe('spawnActor', () => {
     tickActor(actor, 0.5, { x: 3.5, y: 0.5 }, world);
 
     expect(actor.get(Renderable)!.animationTime).toBe(0.5);
+  });
+
+  it('randomizes chase speed within configured spread at spawn', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    const actor = spawnActor(mockTexture(), 0.5, 0.5, {
+      speed: 2,
+      sightRange: 10,
+      proximityRadius: 1,
+      chaseOnSight: true
+    });
+
+    const world = new TestWorld([
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY],
+      [MAP_EMPTY, MAP_EMPTY, MAP_EMPTY, MAP_EMPTY]
+    ]);
+
+    tickActor(actor, 1, { x: 3.5, y: 0.5 }, world);
+
+    expect(actor.x).toBeCloseTo(0.5 + 2 * (1 - CONFIG.actors.movementSpeedSpread), 5);
+    vi.mocked(Math.random).mockRestore();
   });
 });

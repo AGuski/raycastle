@@ -1,3 +1,4 @@
+import { CONFIG } from '../../core/config';
 import { SpriteSheet } from '../spriteSheet';
 import { SpriteEffect } from './spriteEffect';
 import { Attacker } from './components/attacker';
@@ -7,6 +8,7 @@ import { Damageable } from './components/damageable';
 import { Renderable } from './components/renderable';
 import { Strikeable } from './components/strikeable';
 import { Entity } from './entity';
+import { rollMovementSpeed } from './rollMovementSpeed';
 import {
   BounceWalkAnimator,
   BounceWalkConfig,
@@ -36,6 +38,11 @@ export interface ActorSpawnConfig {
   hover?: HoverConfig;
   /** Optional fragment shader applied when this actor is drawn. */
   spriteEffect?: SpriteEffect;
+  /**
+   * Knockback resistance: 0 = baseline (zombie), negative = lightweight,
+   * near 1 = almost immovable. Combined with weapon knockbackStrength at hit time.
+   */
+  knockbackResistance?: number;
   /** Health, contact damage, and attack cadence. */
   combat?: ActorCombatConfig;
 }
@@ -43,6 +50,8 @@ export interface ActorSpawnConfig {
 export interface SpawnActorOptions {
   /** Adds weapon-hit response (flash, knockback). Default false. */
   strikeable?: boolean;
+  /** When false, chase speed matches config exactly (for tests). Default true. */
+  randomizeSpeed?: boolean;
 }
 
 /** Composes an actor entity from movement, render, and sensor components. */
@@ -63,7 +72,7 @@ export function spawnActor(
   }
 
   if (options.strikeable) {
-    entity.add(new Strikeable());
+    entity.add(new Strikeable(config.knockbackResistance ?? 0));
   }
 
   if (config.combat) {
@@ -78,9 +87,14 @@ export function spawnActor(
   }
 
   if (config.chaseOnSight) {
+    const randomizeSpeed = options.randomizeSpeed ?? true;
+    const speed = randomizeSpeed
+      ? rollMovementSpeed(config.speed, CONFIG.actors.movementSpeedSpread)
+      : config.speed;
+
     entity.add(
       new ChaseMovement({
-        speed: config.speed,
+        speed,
         sightRange: config.sightRange
       })
     );

@@ -76,8 +76,8 @@ export const CONFIG = {
       activeEnd: 0.75,
       /** Seconds the hit flash stays visible. */
       hitFlashDuration: 0.25,
-      /** How far actors are shoved away from the player on hit (world units). */
-      knockbackDistance: 0.5,
+      /** Player weapon knockback output (world units at resistance 0). */
+      knockbackStrength: 0.5,
       /** Seconds over which knockback distance is applied (ease-out). */
       knockbackDuration: 0.12,
       /** Average weapon damage per hit. */
@@ -129,12 +129,15 @@ export const CONFIG = {
     breakableWallDensity: 0.2
   },
   actors: {
+    /** ± fraction applied to chase speed when a moving actor spawns. */
+    movementSpeedSpread: 0.25,
     zombie: {
       speed: 0.65,
       sightRange: 18,
       proximityRadius: 1.5,
       chaseOnSight: true,
       animationSpeed: 0.7,
+      knockbackResistance: 0,
       combat: { maxHealth: 35, damage: 8, attackInterval: 1.6 }
     },
     garrison: {
@@ -143,6 +146,7 @@ export const CONFIG = {
       proximityRadius: 1.5,
       chaseOnSight: true,
       animationSpeed: 1,
+      knockbackResistance: 0.1,
       bounceWalk: {
         frequency: 1.6,
         swayAngle: 0.1,
@@ -156,6 +160,7 @@ export const CONFIG = {
       proximityRadius: 1.5,
       chaseOnSight: true,
       animationSpeed: 1,
+      knockbackResistance: 0.2,
       spriteEffect: 'darkMiasma',
       hover: {
         frequency: 0.7,
@@ -169,6 +174,7 @@ export const CONFIG = {
       proximityRadius: 1.5,
       chaseOnSight: true,
       animationSpeed: 0.45,
+      knockbackResistance: 0.95,
       combat: { maxHealth: 100, damage: 22, attackInterval: 2.4 }
     },
     skitterling: {
@@ -177,6 +183,7 @@ export const CONFIG = {
       proximityRadius: 1.5,
       chaseOnSight: true,
       animationSpeed: 1.35,
+      knockbackResistance: -2,
       combat: { maxHealth: 10, damage: 3, attackInterval: 0.45 }
     }
   },

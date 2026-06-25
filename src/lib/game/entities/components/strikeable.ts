@@ -1,6 +1,7 @@
 import { CONFIG } from '../../../core/config';
 import { hasLineOfSight } from '../../../engine/lineOfSight';
 import { rollDamage } from '../../combat/damageRoll';
+import { resolveKnockbackDistance } from '../../combat/knockback';
 import { isInStrikeCone } from '../../systems/weaponStrike';
 import { Component, ComponentContext } from '../component';
 import { Entity } from '../entity';
@@ -15,6 +16,8 @@ export class Strikeable implements Component {
   private _knockbackDirY = 0;
   private _knockbackTotal = 0;
   private _knockbackElapsed = 0;
+
+  constructor(private readonly knockbackResistance = 0) {}
 
   onAttach(entity: Entity): void {
     this.entity = entity;
@@ -56,7 +59,12 @@ export class Strikeable implements Component {
   /** Full weapon-hit response: flash, knockback, and damage. */
   receiveWeaponHit(ctx: ComponentContext, swingId: number): void {
     this.markHit(swingId, ctx.time);
-    this.applyKnockback(ctx.player, CONFIG.weapon.strike.knockbackDistance);
+
+    const distance = resolveKnockbackDistance(
+      CONFIG.weapon.strike.knockbackStrength,
+      this.knockbackResistance
+    );
+    this.applyKnockback(ctx.player, distance);
 
     const { baseDamage, damageLuck } = CONFIG.weapon.strike;
     const amount = rollDamage(baseDamage, damageLuck);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '../../../core/config';
+import { resolveKnockbackDistance } from '../../combat/knockback';
 import { MAP_EMPTY } from '../../../types';
 import { ComponentContext } from '../component';
 import { Entity } from '../entity';
@@ -56,5 +57,39 @@ describe('Strikeable', () => {
     expect(entity.x).toBeLessThan(1.5);
     strikeable.update(ctx(CONFIG.weapon.strike.knockbackDuration * 0.5));
     expect(entity.x).toBeCloseTo(1.5, 4);
+  });
+
+  it('scales knockback by resistance when receiving a weapon hit', () => {
+    const heavy = new Entity(1, 0);
+    heavy.add(new Strikeable(0.95));
+    const heavyStrikeable = heavy.get(Strikeable)!;
+
+    heavyStrikeable.receiveWeaponHit(
+      {
+        ...ctx(0),
+        time: 1,
+        player: { x: 0, y: 0, direction: 0, sheathed: false, swingProgress: 0.5, swingId: 1 }
+      },
+      1
+    );
+
+    const light = new Entity(1, 0);
+    light.add(new Strikeable(-1));
+    const lightStrikeable = light.get(Strikeable)!;
+
+    lightStrikeable.receiveWeaponHit(
+      {
+        ...ctx(0),
+        time: 1,
+        player: { x: 0, y: 0, direction: 0, sheathed: false, swingProgress: 0.5, swingId: 1 }
+      },
+      1
+    );
+
+    const strength = CONFIG.weapon.strike.knockbackStrength;
+    expect(resolveKnockbackDistance(strength, 0.95)).toBeCloseTo(0.025);
+    expect(resolveKnockbackDistance(strength, -1)).toBe(1);
+    expect(heavyStrikeable.isKnockedBack()).toBe(true);
+    expect(lightStrikeable.isKnockedBack()).toBe(true);
   });
 });
