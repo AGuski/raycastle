@@ -173,7 +173,7 @@ export const CONFIG = {
       chaseOnSight: true,
       animationSpeed: 0.45,
       knockbackResistance: 0.95,
-      combat: { maxHealth: 100, damage: 22, attackInterval: 2.4 }
+      combat: { maxHealth: 120, damage: 22, attackInterval: 2.4 }
     },
     skitterling: {
       speed: 2,
