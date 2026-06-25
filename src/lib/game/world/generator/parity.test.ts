@@ -2,13 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { Block, BlockSide } from '../../block';
 import { spriteSheet } from '../../spriteSheet';
 import { Entity } from '../../entities/entity';
-import { Renderable } from '../../entities/components/renderable';
 import { BreakableWall } from '../../entities/components/breakableWall';
-import { Strikeable } from '../../entities/components/strikeable';
 import { CellAnchor } from '../../entities/components/cellAnchor';
 import { MAP_EMPTY, MapCell } from '../../../types';
 import { Chunk } from '../chunk';
-import { CONFIG } from '../../../core/config';
 import { defaultGeneratorParams } from '../levelRecipe';
 import { hashSeed } from '../../../worldgen/seededRng';
 import { SeededRng, chunkSeed } from '../../../worldgen/seededRng';
@@ -16,12 +13,7 @@ import { buildTerrainMask } from '../../../worldgen/terrain';
 import { generateChunkData } from '../../../worldgen';
 
 import { generateChunk } from './generateChunk';
-import {
-  DecorationAssets,
-  applyTerrainToCells,
-  scatterLamps,
-  scatterActors
-} from './decorate';
+import { DecorationAssets, applyTerrainToCells, scatterLamps } from './decorate';
 import { scatterBreakableWalls } from './breakableWalls';
 
 const CHUNK_SIZE = 16;
@@ -62,11 +54,16 @@ function mockAssets(): DecorationAssets {
 const PARAMS = { ...defaultGeneratorParams(), chunkSize: CHUNK_SIZE };
 
 /**
- * Reproduces the ORIGINAL pre-refactor generateChunk body using the untouched
- * decorate / breakableWalls helpers. This is the "pre" reference: identical fork
- * salts and call order to the original orchestrator.
+ * Reference for the buckets the spawn overhaul did NOT touch: terrain tiles,
+ * lamps, and breakable walls. Actors are intentionally excluded here — they are
+ * now produced by the biome encounter resolver (covered by its own tests and the
+ * golden checksum below), and deliberately diverge from the old per-kind scatter.
+ *
+ * Lamps (fork 0x4c41) and breakable walls (fork 0x8d00) draw from independent
+ * forks of the chunk-root rng, so they remain byte-identical to the original
+ * orchestrator regardless of the actor changes.
  */
-function legacyGenerateChunk(
+function legacyTerrainAndProps(
   cx: number,
   cy: number,
   assets: DecorationAssets
@@ -76,12 +73,6 @@ function legacyGenerateChunk(
     wallDensity,
     lampDensity,
     lampPlayerClearRadius,
-    enemyDensity,
-    enemyPlayerClearRadius,
-    garrisonDensity,
-    hunterLichDensity,
-    wardenDensity,
-    skitterlingDensity,
     borderPortalCount,
     breakableWallDensity
   } = PARAMS;
@@ -101,70 +92,7 @@ function legacyGenerateChunk(
     density: breakableWallDensity
   }, assets.crackDecal);
 
-  const entities = scatterActors(
-    cells,
-    chunkSize,
-    cx,
-    cy,
-    rng.fork(0x5a01),
-    assets,
-    CONFIG.actors.zombie,
-    { enemyDensity, clearRadius: enemyPlayerClearRadius, ...scatterExclude }
-  );
-  entities.push(
-    ...scatterActors(
-      cells,
-      chunkSize,
-      cx,
-      cy,
-      rng.fork(0x6a55),
-      assets,
-      CONFIG.actors.garrison,
-      { enemyDensity: garrisonDensity, clearRadius: enemyPlayerClearRadius, ...scatterExclude },
-      assets.garrison
-    )
-  );
-  entities.push(
-    ...scatterActors(
-      cells,
-      chunkSize,
-      cx,
-      cy,
-      rng.fork(0x71c4),
-      assets,
-      CONFIG.actors.hunterLich,
-      { enemyDensity: hunterLichDensity, clearRadius: enemyPlayerClearRadius, ...scatterExclude },
-      assets.hunterLich
-    )
-  );
-  entities.push(
-    ...scatterActors(
-      cells,
-      chunkSize,
-      cx,
-      cy,
-      rng.fork(0x7d03),
-      assets,
-      CONFIG.actors.warden,
-      { enemyDensity: wardenDensity, clearRadius: enemyPlayerClearRadius, ...scatterExclude },
-      assets.warden
-    )
-  );
-  entities.push(
-    ...scatterActors(
-      cells,
-      chunkSize,
-      cx,
-      cy,
-      rng.fork(0x8312),
-      assets,
-      CONFIG.actors.skitterling,
-      { enemyDensity: skitterlingDensity, clearRadius: enemyPlayerClearRadius, ...scatterExclude },
-      assets.skitterling
-    )
-  );
-
-  return { chunk: new Chunk(cx, cy, cells, staticEntities, cellEntities), entities };
+  return { chunk: new Chunk(cx, cy, cells, staticEntities, cellEntities), entities: [] };
 }
 
 /** Stable, comparable signature of a cell array. */
@@ -189,42 +117,26 @@ function tileSignature(cells: MapCell[]): string {
     .join(',');
 }
 
-function entitySig(e: Entity, assets: DecorationAssets): string {
+function entitySig(e: Entity): string {
   const x = e.x.toFixed(4);
   const y = e.y.toFixed(4);
   if (e.get(BreakableWall)) {
     const anchor = e.get(CellAnchor);
     return `wall@${anchor?.wx},${anchor?.wy}:${x},${y}`;
   }
-  const r = e.get(Renderable);
-  const tex = r?.texture;
-  let kind = 'lamp';
-  if (e.get(Strikeable)) {
-    if (tex === assets.zombie) kind = 'zombie';
-    else if (tex === assets.garrison) kind = 'garrison';
-    else if (tex === assets.hunterLich) kind = 'hunterLich';
-    else if (tex === assets.warden) kind = 'warden';
-    else if (tex === assets.skitterling) kind = 'skitterling';
-    else kind = 'actor?';
-  } else if (tex === assets.lampstand) {
-    kind = 'lamp';
-  }
-  return `${kind}@${x},${y}`;
+  return `lamp@${x},${y}`;
 }
 
-function chunkSignature(
-  result: { chunk: Chunk; entities: Entity[] },
-  assets: DecorationAssets
-) {
+/** Terrain + lamps + breakable walls only — the buckets the overhaul preserves. */
+function propsSignature(result: { chunk: Chunk }) {
   return {
     tiles: tileSignature(result.chunk.cells),
-    static: result.chunk.entities.map((e) => entitySig(e, assets)),
-    cell: result.chunk.cellEntities.map((e) => entitySig(e, assets)),
-    dynamic: result.entities.map((e) => entitySig(e, assets))
+    static: result.chunk.entities.map((e) => entitySig(e)),
+    cell: result.chunk.cellEntities.map((e) => entitySig(e))
   };
 }
 
-describe('worldgen parity: materialize(generateChunkData) === legacy generateChunk', () => {
+describe('worldgen parity: terrain/lamp/wall buckets unchanged by spawn overhaul', () => {
   const coords: { cx: number; cy: number }[] = [];
   for (let cy = -1; cy <= 1; cy++) {
     for (let cx = -1; cx <= 1; cx++) {
@@ -232,17 +144,14 @@ describe('worldgen parity: materialize(generateChunkData) === legacy generateChu
     }
   }
 
-  it('produces byte-identical chunks across a 3x3 neighborhood', () => {
+  it('produces byte-identical terrain/props across a 3x3 neighborhood', () => {
     for (const { cx, cy } of coords) {
       const assetsA = mockAssets();
       const assetsB = mockAssets();
-      const legacy = legacyGenerateChunk(cx, cy, assetsA);
+      const legacy = legacyTerrainAndProps(cx, cy, assetsA);
       const next = generateChunk(cx, cy, WORLD_SEED, PARAMS, assetsB, SPAWN);
 
-      const legacySig = chunkSignature(legacy, assetsA);
-      const nextSig = chunkSignature(next, assetsB);
-
-      expect(nextSig, `chunk (${cx},${cy})`).toEqual(legacySig);
+      expect(propsSignature(next), `chunk (${cx},${cy})`).toEqual(propsSignature(legacy));
     }
   });
 
@@ -290,5 +199,19 @@ describe('worldgen parity: materialize(generateChunkData) === legacy generateChu
       entityCount: data.entities.length,
       kinds
     }).toMatchSnapshot();
+  });
+
+  it('locks deterministic encounter output across the 3x3 neighborhood', () => {
+    // Aggregate actor counts so the snapshot guards the pack resolver, not just
+    // one (possibly empty) chunk. Catches RNG-order or tuning regressions.
+    const actorKinds: Record<string, number> = {};
+    for (const { cx, cy } of coords) {
+      const data = generateChunkData(cx, cy, WORLD_SEED, { ...PARAMS, paintingVariantCount: 4 }, SPAWN);
+      for (const e of data.entities) {
+        if (e.kind === 'lamp' || e.kind === 'breakableWall') continue;
+        actorKinds[e.kind] = (actorKinds[e.kind] ?? 0) + 1;
+      }
+    }
+    expect(actorKinds).toMatchSnapshot();
   });
 });

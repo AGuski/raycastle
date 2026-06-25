@@ -1,18 +1,28 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`worldgen parity: materialize(generateChunkData) === legacy generateChunk > data layer is deterministic for a fixed seed (golden checksum) 1`] = `
+exports[`worldgen parity: terrain/lamp/wall buckets unchanged by spawn overhaul > data layer is deterministic for a fixed seed (golden checksum) 1`] = `
 {
   "chunkSize": 16,
   "decorCount": 95,
-  "entityCount": 24,
+  "entityCount": 74,
   "kinds": {
     "breakableWall": 5,
     "lamp": 14,
-    "skitterling": 2,
+    "skitterling": 6,
     "warden": 1,
-    "zombie": 2,
+    "zombie": 48,
   },
   "tilesLen": 256,
   "wallCount": 95,
+}
+`;
+
+exports[`worldgen parity: terrain/lamp/wall buckets unchanged by spawn overhaul > locks deterministic encounter output across the 3x3 neighborhood 1`] = `
+{
+  "garrison": 10,
+  "hunterLich": 17,
+  "skitterling": 57,
+  "warden": 15,
+  "zombie": 400,
 }
 `;

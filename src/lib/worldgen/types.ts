@@ -11,14 +11,20 @@ export const enum Tile {
   Wall = 1
 }
 
-export type EntityKind =
-  | 'lamp'
+/**
+ * Hostile actor kinds. This union is the canonical spawn vocabulary: the pack
+ * registry, the materialise bindings, and the per-actor CONFIG are all keyed by
+ * it, so adding a member here makes the compiler point at every place that must
+ * gain a binding.
+ */
+export type ActorKind =
   | 'zombie'
   | 'garrison'
   | 'hunterLich'
   | 'warden'
-  | 'skitterling'
-  | 'breakableWall';
+  | 'skitterling';
+
+export type EntityKind = 'lamp' | 'breakableWall' | ActorKind;
 
 /** Cardinal wall-face indices matching the game Block sides array. */
 export type WallFace = 0 | 1 | 2 | 3;
@@ -62,12 +68,12 @@ export interface WorldGenParams {
   wallDensity: number;
   lampDensity: number;
   lampPlayerClearRadius: number;
-  enemyDensity: number;
+  /**
+   * Encounters are suppressed within this radius of the player spawn. How *often*
+   * encounters spawn and *what* they are is owned by the biome spawn tables
+   * (see spawn/biomes.ts), not by params.
+   */
   enemyPlayerClearRadius: number;
-  garrisonDensity: number;
-  hunterLichDensity: number;
-  wardenDensity: number;
-  skitterlingDensity: number;
   borderPortalCount: { min: number; max: number };
   breakableWallDensity: number;
   /** Number of painting variants; must equal assets.paintings.length. */

@@ -4,7 +4,7 @@ import { spriteSheet } from '../../spriteSheet';
 import { ChunkManager } from '../chunkManager';
 import { EntityManager } from '../entityManager';
 import { localIndex } from '../chunk';
-import { DecorationAssets, scatterActors } from './decorate';
+import { DecorationAssets } from './decorate';
 import { generateChunk } from './generateChunk';
 import {
   Edge,
@@ -12,9 +12,9 @@ import {
   edgeHasPortal,
   getSharedEdgeCells
 } from '../../../worldgen/terrain';
-import { hashSeed, mixHash, randomDefaultSeed, SeededRng } from '../../../worldgen/seededRng';
+import { hashSeed, mixHash, randomDefaultSeed } from '../../../worldgen/seededRng';
 import { defaultGeneratorParams } from '../levelRecipe';
-import { MAP_EMPTY, MapCell } from '../../../types';
+import { MAP_EMPTY } from '../../../types';
 
 const CHUNK_SIZE = 32;
 const WORLD_SEED = hashSeed('test-world');
@@ -80,35 +80,6 @@ describe('generateChunk determinism', () => {
     for (let i = 0; i < a.chunk.cells.length; i++) {
       expect(cellIsOpen(a.chunk.cells[i])).toBe(cellIsOpen(b.chunk.cells[i]));
     }
-  });
-});
-
-describe('scatterActors determinism', () => {
-  it('returns the same actor count for the same seed and chunk coord', () => {
-    const assets = mockDecorationAssets();
-    const config = {
-      speed: 1,
-      sightRange: 10,
-      proximityRadius: 1,
-      chaseOnSight: true
-    };
-    const params = {
-      enemyDensity: 0.015,
-      clearRadius: 4
-    };
-
-    const makeCells = () => {
-      const cells: MapCell[] = new Array(CHUNK_SIZE * CHUNK_SIZE).fill(MAP_EMPTY);
-      return cells;
-    };
-
-    const rngA = new SeededRng(12345);
-    const rngB = new SeededRng(12345);
-    const a = scatterActors(makeCells(), CHUNK_SIZE, 0, 0, rngA, assets, config, params);
-    const b = scatterActors(makeCells(), CHUNK_SIZE, 0, 0, rngB, assets, config, params);
-
-    expect(a.length).toBe(b.length);
-    expect(a.length).toBeGreaterThan(0);
   });
 });
 

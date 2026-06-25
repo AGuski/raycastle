@@ -118,12 +118,10 @@ export const CONFIG = {
     wallDensity: 0.45,
     lampDensity: 0.07,
     lampPlayerClearRadius: 2,
-    enemyDensity: 0.015,
+    // Encounter frequency and pack mix now live in the biome spawn tables
+    // (src/lib/worldgen/spawn/biomes.ts); only the player-spawn clearance is a
+    // global rule.
     enemyPlayerClearRadius: 4,
-    garrisonDensity: 0.002,
-    hunterLichDensity: 0.008,
-    wardenDensity: 0.006,
-    skitterlingDensity: 0.015,
     borderPortalCount: { min: 1, max: 3 },
     /** Per-candidate probability of placing a breakable wall in a chunk. */
     breakableWallDensity: 0.2

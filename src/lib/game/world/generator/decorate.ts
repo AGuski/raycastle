@@ -1,5 +1,4 @@
 import { Block, BlockSide, BlockSides } from '../../block';
-import { ActorSpawnConfig, createStrikeableActor } from '../../entities/spawnActor';
 import { Entity } from '../../entities/entity';
 import { spawnStaticSprite } from '../../entities/staticSprite';
 import { SpriteSheet } from '../../spriteSheet';
@@ -44,13 +43,6 @@ export interface ScatterParams {
 
 export interface LampScatterParams {
   lampDensity: number;
-  excludeWx?: number;
-  excludeWy?: number;
-  clearRadius: number;
-}
-
-export interface ActorScatterParams {
-  enemyDensity: number;
   excludeWx?: number;
   excludeWy?: number;
   clearRadius: number;
@@ -132,32 +124,5 @@ export function scatterLamps(
       clearRadius: params.clearRadius
     },
     (wx, wy) => spawnStaticSprite(assets.lampstand, wx, wy)
-  );
-}
-
-export function scatterActors(
-  cells: MapCell[],
-  chunkSize: number,
-  cx: number,
-  cy: number,
-  rng: SeededRng,
-  assets: DecorationAssets,
-  config: ActorSpawnConfig,
-  params: ActorScatterParams,
-  texture: SpriteSheet = assets.zombie
-): Entity[] {
-  return scatterOnOpenCells(
-    cells,
-    chunkSize,
-    cx,
-    cy,
-    rng,
-    {
-      density: params.enemyDensity,
-      excludeWx: params.excludeWx,
-      excludeWy: params.excludeWy,
-      clearRadius: params.clearRadius
-    },
-    (wx, wy) => createStrikeableActor(texture, wx, wy, config)
   );
 }

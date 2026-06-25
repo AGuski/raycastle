@@ -6,7 +6,7 @@ import { spawnBreakableWall } from '../entities/spawnBreakableWall';
 import { spawnStaticSprite } from '../entities/staticSprite';
 import { SpriteSheet } from '../spriteSheet';
 import { MAP_EMPTY, MapCell } from '../../types';
-import type { ChunkData, EntityKind, WallDecor } from '../../worldgen';
+import type { ActorKind, ChunkData, EntityKind, WallDecor } from '../../worldgen';
 import { Tile } from '../../worldgen';
 import { Chunk, localIndex } from './chunk';
 import { DecorationAssets } from './generator/decorate';
@@ -29,38 +29,24 @@ function makeWallBlock(decor: WallDecor | null, assets: DecorationAssets): Block
   return new Block(sides);
 }
 
-function actorConfigFor(kind: EntityKind): ActorSpawnConfig {
-  switch (kind) {
-    case 'zombie':
-      return CONFIG.actors.zombie;
-    case 'garrison':
-      return CONFIG.actors.garrison;
-    case 'hunterLich':
-      return CONFIG.actors.hunterLich;
-    case 'warden':
-      return CONFIG.actors.warden;
-    case 'skitterling':
-      return CONFIG.actors.skitterling;
-    default:
-      throw new Error(`Not an actor kind: ${kind}`);
-  }
-}
+/**
+ * Single source of truth binding each actor kind to its tuning config and
+ * sprite sheet. Keyed by ActorKind so adding an enemy is a compile-checked,
+ * one-line change here (plus the pack registry) — no scattered switch cases.
+ */
+const ACTOR_BINDINGS: Record<
+  ActorKind,
+  { config: () => ActorSpawnConfig; texture: (a: DecorationAssets) => SpriteSheet }
+> = {
+  zombie: { config: () => CONFIG.actors.zombie, texture: (a) => a.zombie },
+  garrison: { config: () => CONFIG.actors.garrison, texture: (a) => a.garrison ?? a.zombie },
+  hunterLich: { config: () => CONFIG.actors.hunterLich, texture: (a) => a.hunterLich ?? a.zombie },
+  warden: { config: () => CONFIG.actors.warden, texture: (a) => a.warden ?? a.zombie },
+  skitterling: { config: () => CONFIG.actors.skitterling, texture: (a) => a.skitterling ?? a.zombie }
+};
 
-function actorTextureFor(kind: EntityKind, assets: DecorationAssets): SpriteSheet {
-  switch (kind) {
-    case 'zombie':
-      return assets.zombie;
-    case 'garrison':
-      return assets.garrison ?? assets.zombie;
-    case 'hunterLich':
-      return assets.hunterLich ?? assets.zombie;
-    case 'warden':
-      return assets.warden ?? assets.zombie;
-    case 'skitterling':
-      return assets.skitterling ?? assets.zombie;
-    default:
-      throw new Error(`Not an actor kind: ${kind}`);
-  }
+function actorBindingFor(kind: Exclude<EntityKind, 'lamp' | 'breakableWall'>) {
+  return ACTOR_BINDINGS[kind];
 }
 
 /**
@@ -104,16 +90,18 @@ export function materializeChunk(
       case 'garrison':
       case 'hunterLich':
       case 'warden':
-      case 'skitterling':
+      case 'skitterling': {
+        const binding = actorBindingFor(spec.kind);
         entities.push(
           createStrikeableActor(
-            actorTextureFor(spec.kind, assets),
+            binding.texture(assets),
             spec.wx,
             spec.wy,
-            actorConfigFor(spec.kind)
+            binding.config()
           )
         );
         break;
+      }
     }
   }
 

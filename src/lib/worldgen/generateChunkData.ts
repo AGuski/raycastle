@@ -5,6 +5,7 @@ import {
 } from './terrain';
 import { chunkSeed, SeededRng } from './seededRng';
 import { ChunkData, EntitySpec, Tile, WallDecor, WorldGenParams } from './types';
+import { resolveEncounters } from './spawn/resolveEncounters';
 
 function localIndex(lx: number, ly: number, chunkSize: number): number {
   return ly * chunkSize + lx;
@@ -74,12 +75,7 @@ export function generateChunkData(
     wallDensity,
     lampDensity,
     lampPlayerClearRadius,
-    enemyDensity,
     enemyPlayerClearRadius,
-    garrisonDensity,
-    hunterLichDensity,
-    wardenDensity,
-    skitterlingDensity,
     borderPortalCount,
     breakableWallDensity,
     paintingVariantCount
@@ -158,73 +154,18 @@ export function generateChunkData(
     }
   }
 
-  // Zombies — fork(0x5a01), dynamic bucket.
-  scatterOnOpen(
+  // Actors — biome-driven encounter packs, dynamic bucket. Replaces the old
+  // independent per-kind scatter passes. Uses its own fork salts internally, so
+  // lamp/wall determinism above is untouched.
+  resolveEncounters(
     tiles,
     chunkSize,
     cx,
     cy,
-    rng.fork(0x5a01),
-    enemyDensity,
+    worldSeed,
+    rng,
     enemyPlayerClearRadius,
     exclude,
-    (wx, wy) => ({ kind: 'zombie', wx, wy }),
-    entities
-  );
-
-  // Garrison — fork(0x6a55), dynamic bucket.
-  scatterOnOpen(
-    tiles,
-    chunkSize,
-    cx,
-    cy,
-    rng.fork(0x6a55),
-    garrisonDensity,
-    enemyPlayerClearRadius,
-    exclude,
-    (wx, wy) => ({ kind: 'garrison', wx, wy }),
-    entities
-  );
-
-  // Hunter lich — fork(0x71c4), dynamic bucket.
-  scatterOnOpen(
-    tiles,
-    chunkSize,
-    cx,
-    cy,
-    rng.fork(0x71c4),
-    hunterLichDensity,
-    enemyPlayerClearRadius,
-    exclude,
-    (wx, wy) => ({ kind: 'hunterLich', wx, wy }),
-    entities
-  );
-
-  // Warden — fork(0x7d03), dynamic bucket.
-  scatterOnOpen(
-    tiles,
-    chunkSize,
-    cx,
-    cy,
-    rng.fork(0x7d03),
-    wardenDensity,
-    enemyPlayerClearRadius,
-    exclude,
-    (wx, wy) => ({ kind: 'warden', wx, wy }),
-    entities
-  );
-
-  // Skitterling — fork(0x8312), dynamic bucket.
-  scatterOnOpen(
-    tiles,
-    chunkSize,
-    cx,
-    cy,
-    rng.fork(0x8312),
-    skitterlingDensity,
-    enemyPlayerClearRadius,
-    exclude,
-    (wx, wy) => ({ kind: 'skitterling', wx, wy }),
     entities
   );
 
