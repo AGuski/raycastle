@@ -9,12 +9,15 @@ import { Strikeable } from './strikeable';
 
 /** Per-enemy attack timing and geometry. */
 export interface AttackProfile {
-  /** Spacing (world units) at which the wind-up begins. */
+  /**
+   * The enemy's combat distance (world units): it holds station just inside this
+   * (chase stops at range − 0.1), winds up when the player is within it, and the
+   * strike cone reaches exactly this far at the connect frame. One value drives
+   * both spacing and reach.
+   */
   range: number;
   /** Half-angle of the strike cone in radians. */
   halfAngle: number;
-  /** Strike cone reach at the connect frame (world units). */
-  reach: number;
   /** Telegraph duration before the strike commits (seconds). */
   windup: number;
   /** Active strike window over which the lunge plays and the hit lands. */
@@ -216,7 +219,7 @@ export class Attacker implements Component {
     const inCone = isInStrikeCone(
       viewer,
       player,
-      this.config.attack.reach,
+      this.config.attack.range,
       this.config.attack.halfAngle
     );
     if (!inCone) return;

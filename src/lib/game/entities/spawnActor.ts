@@ -101,8 +101,8 @@ export function spawnActor(
       ? rollMovementSpeed(config.speed, CONFIG.actors.movementSpeedSpread)
       : config.speed;
 
-    // Hold position at the edge of attack reach so heavies (long range) zone
-    // space while skirmishers (short range) press to point-blank.
+    // Hold station just inside attack range so heavies (long range) zone space
+    // while skirmishers (short range) press in close, then attack from there.
     const stopRadius = config.combat
       ? Math.max(CONFIG.contact.stopRadius, config.combat.attack.range - 0.1)
       : undefined;

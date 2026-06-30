@@ -8,7 +8,6 @@ import { Strikeable } from './strikeable';
 const PROFILE: AttackProfile = {
   range: 1.5,
   halfAngle: 1.0,
-  reach: 2,
   windup: 0.5,
   strikeDuration: 0.2,
   recovery: 0.3,

@@ -150,7 +150,6 @@ export const CONFIG = {
         attack: {
           range: 0.7,
           halfAngle: 0.5,
-          reach: 0.7,
           windup: 0.25,
           strikeDuration: 0.12,
           recovery: 0.27,
@@ -178,7 +177,6 @@ export const CONFIG = {
         attack: {
           range: 0.7,
           halfAngle: 0.5,
-          reach: 0.6,
           windup: 0.3,
           strikeDuration: 0.12,
           recovery: 0.5,
@@ -206,7 +204,6 @@ export const CONFIG = {
         attack: {
           range: 0.95,
           halfAngle: 0.4,
-          reach: 0.9,
           windup: 0.4,
           strikeDuration: 0.1,
           recovery: 0.4,
@@ -231,7 +228,6 @@ export const CONFIG = {
         attack: {
           range: 1.3,
           halfAngle: 0.6,
-          reach: 1.2,
           windup: 1.0,
           strikeDuration: 0.16,
           recovery: 0.8,
@@ -252,13 +248,12 @@ export const CONFIG = {
         damage: 3,
         attackInterval: 0.45,
         attack: {
-          range: 0.9,
+          range: 1.2,
           halfAngle: 0.55,
-          reach: 0.6,
           windup: 0.15,
           strikeDuration: 0.1,
           recovery: 0.3,
-          lunge: 0.6,
+          lunge: 0.75,
           interruptible: true
         }
       }
