@@ -3,6 +3,8 @@ import { AssetManager } from '../../engine/assets';
 import { Bitmap, Block, BlockSide, BlockSides } from '../block';
 import { PlayerView } from '../entities/component';
 import { Entity } from '../entities/entity';
+import { Damageable } from '../entities/components/damageable';
+import { Solid } from '../entities/components/solid';
 import { decalsFromCellEntities } from '../entities/decalsFromEntities';
 import { spritesFromEntities } from '../entities/spritesFromEntities';
 import { Decal } from '../decal';
@@ -244,6 +246,72 @@ export class World {
 
   isOpen(x: number, y: number): boolean {
     return isOpenCell(this.getBlock(x, y));
+  }
+
+  /**
+   * True when moving to (nx, ny) from (fromX, fromY) would push the player into
+   * a Solid actor. Only blocks movement that closes distance to the actor, so a
+   * player already inside the radius can still back out (never gets trapped).
+   */
+  blockedByActor(
+    nx: number,
+    ny: number,
+    fromX: number,
+    fromY: number
+  ): boolean {
+    for (const entity of this.entityManager.entities) {
+      const solid = entity.get(Solid);
+      if (!solid) continue;
+      const damageable = entity.get(Damageable);
+      if (damageable && !damageable.isAlive) continue;
+
+      const newDistSq =
+        (entity.x - nx) ** 2 + (entity.y - ny) ** 2;
+      if (newDistSq >= solid.radius * solid.radius) continue;
+
+      const oldDistSq =
+        (entity.x - fromX) ** 2 + (entity.y - fromY) ** 2;
+      if (newDistSq < oldDistSq) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Deflect a desired move around the first Solid actor it would push into, so
+   * the player slides along the actor's perimeter instead of stopping dead.
+   * Removes only the component of the move pointing into the actor's center
+   * (the tangential "slide" survives); outward moves pass through untouched.
+   */
+  actorSlide(
+    x: number,
+    y: number,
+    dx: number,
+    dy: number
+  ): { dx: number; dy: number } {
+    for (const entity of this.entityManager.entities) {
+      const solid = entity.get(Solid);
+      if (!solid) continue;
+      const damageable = entity.get(Damageable);
+      if (damageable && !damageable.isAlive) continue;
+
+      const nx = x + dx;
+      const ny = y + dy;
+      const distSq = (entity.x - nx) ** 2 + (entity.y - ny) ** 2;
+      if (distSq >= solid.radius * solid.radius) continue;
+
+      // Outward normal: from the actor's center toward the player.
+      let normX = x - entity.x;
+      let normY = y - entity.y;
+      const len = Math.hypot(normX, normY) || 1;
+      normX /= len;
+      normY /= len;
+
+      const inward = dx * normX + dy * normY;
+      if (inward < 0) {
+        return { dx: dx - inward * normX, dy: dy - inward * normY };
+      }
+    }
+    return { dx, dy };
   }
 
   getBlock(x: number, y: number): MapCell {

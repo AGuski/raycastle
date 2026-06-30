@@ -12,7 +12,7 @@ export class Player {
   private _paces = 0;
   private _swingTime = 0;
   private _swingId = 0;
-  private _sheathed = false;
+  private _sheathed = true;
   private _hurtVignetteAge = 0;
   private _hurtActive = false;
 
@@ -57,8 +57,23 @@ export class Player {
 
   private move(dx: number, dy: number, map: World): void {
     if (dx === 0 && dy === 0) return;
-    if (map.isOpen(this.x + dx, this.y)) this.x += dx;
-    if (map.isOpen(this.x, this.y + dy)) this.y += dy;
+
+    // Slide around solid actors (the Warden) instead of stopping dead, the same
+    // way axis separation lets us slide along walls.
+    ({ dx, dy } = map.actorSlide(this.x, this.y, dx, dy));
+
+    if (
+      map.isOpen(this.x + dx, this.y) &&
+      !map.blockedByActor(this.x + dx, this.y, this.x, this.y)
+    ) {
+      this.x += dx;
+    }
+    if (
+      map.isOpen(this.x, this.y + dy) &&
+      !map.blockedByActor(this.x, this.y + dy, this.x, this.y)
+    ) {
+      this.y += dy;
+    }
     this._paces += Math.hypot(dx, dy);
   }
 
@@ -128,7 +143,11 @@ export class Player {
     forward /= len;
     strafe /= len;
 
-    const distance = CONFIG.walkSpeed * seconds;
+    // Drawn weapon slows you down; sheathe it to run at full speed.
+    const speed = this._sheathed
+      ? CONFIG.walkSpeed
+      : CONFIG.walkSpeed * CONFIG.player.drawnMoveScale;
+    const distance = speed * seconds;
     const cos = Math.cos(this.direction);
     const sin = Math.sin(this.direction);
     this.move((cos * forward - sin * strafe) * distance, (sin * forward + cos * strafe) * distance, map);

@@ -181,6 +181,7 @@ void main() {
   }
 
   float outAlpha = clamp(max(bodyAlpha, smoke * 0.95), 0.0, 1.0);
+  color = applyTelegraph(color, uTelegraph);
   color = applyHitFlash(color, uHitFlash);
   if (uDeathDissolve > 0.0) {
     color = applyDeathDissolve(color, outAlpha, uDeathDissolve);

@@ -102,12 +102,24 @@ export class Strikeable implements Component {
   }
 }
 
-/** Marks strikeable actors hit by the current swing during its active frames. */
+/**
+ * Marks strikeable actors hit by the current swing during its active frames,
+ * capped at `maxTargets` distinct enemies per swing. The cap is the weapon's
+ * crowd-control limit: a wide hammer sweep clears many, a knife only a few. When
+ * more targets are in the cone than the remaining budget, the closest are hit
+ * first (peel the nearest threat).
+ */
 export function resolveActorWeaponStrike(
   ctx: ComponentContext,
   entities: Iterable<Entity>
 ): void {
   const { player, world } = ctx;
+  const maxTargets = CONFIG.weapon.strike.maxTargets;
+
+  // Candidates hittable this frame, plus how many this swing already struck on
+  // earlier active frames — the cap spans the whole swing, not a single tick.
+  const candidates: { strikeable: Strikeable; distSq: number }[] = [];
+  let alreadyHit = 0;
 
   for (const entity of entities) {
     const strikeable = entity.get(Strikeable);
@@ -116,10 +128,24 @@ export function resolveActorWeaponStrike(
     const damageable = entity.get(Damageable);
     if (damageable && !damageable.isAlive) continue;
 
-    if (strikeable.wasHitBySwing(player.swingId)) continue;
+    if (strikeable.wasHitBySwing(player.swingId)) {
+      alreadyHit++;
+      continue;
+    }
+
     if (!isInStrikeCone(player, entity)) continue;
     if (!hasLineOfSight(world, player, entity)) continue;
 
-    strikeable.receiveWeaponHit(ctx, player.swingId);
+    const dx = entity.x - player.x;
+    const dy = entity.y - player.y;
+    candidates.push({ strikeable, distSq: dx * dx + dy * dy });
+  }
+
+  const remaining = maxTargets - alreadyHit;
+  if (remaining <= 0) return;
+
+  candidates.sort((a, b) => a.distSq - b.distSq);
+  for (let i = 0; i < Math.min(remaining, candidates.length); i++) {
+    candidates[i].strikeable.receiveWeaponHit(ctx, player.swingId);
   }
 }

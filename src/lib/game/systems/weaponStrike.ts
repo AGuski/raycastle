@@ -2,12 +2,19 @@ import { CONFIG } from '../../core/config';
 import { Point } from '../../types';
 import { PlayerView } from '../entities/component';
 
+/** Minimal pose needed to project a strike cone: position + facing. */
+export interface ConeViewer {
+  x: number;
+  y: number;
+  direction: number;
+}
+
 /** True when a point lies in the view-center strike cone. */
 export function isInStrikeCone(
-  viewer: PlayerView,
+  viewer: ConeViewer,
   target: Point,
-  range = CONFIG.weapon.strike.range,
-  halfAngle = CONFIG.weapon.strike.halfAngle
+  range: number = CONFIG.weapon.strike.range,
+  halfAngle: number = CONFIG.weapon.strike.halfAngle
 ): boolean {
   const dx = target.x - viewer.x;
   const dy = target.y - viewer.y;

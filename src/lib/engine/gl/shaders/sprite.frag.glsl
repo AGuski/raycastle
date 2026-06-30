@@ -35,6 +35,7 @@ void main() {
     color *= volumetricLight(grad, tex.rgb, uTime);
   }
 
+  color = applyTelegraph(color, uTelegraph);
   color = applyHitFlash(color, uHitFlash);
   if (uDeathDissolve > 0.0) {
     color = applyDeathDissolve(color, tex.a, uDeathDissolve);

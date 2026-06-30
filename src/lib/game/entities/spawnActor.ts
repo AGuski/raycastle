@@ -1,11 +1,12 @@
 import { CONFIG } from '../../core/config';
 import { SpriteSheet } from '../spriteSheet';
 import { SpriteEffect } from './spriteEffect';
-import { Attacker } from './components/attacker';
+import { Attacker, AttackProfile } from './components/attacker';
 import { ChaseMovement } from './components/chaseMovement';
 import { ContactSensor } from './components/contactSensor';
 import { Damageable } from './components/damageable';
 import { Renderable } from './components/renderable';
+import { Solid } from './components/solid';
 import { Strikeable } from './components/strikeable';
 import { Entity } from './entity';
 import { rollMovementSpeed } from './rollMovementSpeed';
@@ -16,12 +17,13 @@ import {
   HoverConfig
 } from './spriteAnimator';
 
-/** Health, contact damage, and attack cadence for hostile actors. */
+/** Health, attack damage, and telegraphed-attack timing for hostile actors. */
 export interface ActorCombatConfig {
   maxHealth: number;
   damage: number;
   attackInterval: number;
   damageLuck?: number;
+  attack: AttackProfile;
 }
 
 /** Tuning data for composing a moving actor entity at spawn time. */
@@ -43,6 +45,8 @@ export interface ActorSpawnConfig {
    * near 1 = almost immovable. Combined with weapon knockbackStrength at hit time.
    */
   knockbackResistance?: number;
+  /** When set, body-blocks the player within this radius (world units). */
+  blockRadius?: number;
   /** Health, contact damage, and attack cadence. */
   combat?: ActorCombatConfig;
 }
@@ -75,13 +79,18 @@ export function spawnActor(
     entity.add(new Strikeable(config.knockbackResistance ?? 0));
   }
 
+  if (config.blockRadius) {
+    entity.add(new Solid(config.blockRadius));
+  }
+
   if (config.combat) {
     entity.add(new Damageable(config.combat.maxHealth));
     entity.add(
       new Attacker({
         damage: config.combat.damage,
         attackInterval: config.combat.attackInterval,
-        damageLuck: config.combat.damageLuck
+        damageLuck: config.combat.damageLuck,
+        attack: config.combat.attack
       })
     );
   }
@@ -92,10 +101,17 @@ export function spawnActor(
       ? rollMovementSpeed(config.speed, CONFIG.actors.movementSpeedSpread)
       : config.speed;
 
+    // Hold position at the edge of attack reach so heavies (long range) zone
+    // space while skirmishers (short range) press to point-blank.
+    const stopRadius = config.combat
+      ? Math.max(CONFIG.contact.stopRadius, config.combat.attack.range - 0.1)
+      : undefined;
+
     entity.add(
       new ChaseMovement({
         speed,
-        sightRange: config.sightRange
+        sightRange: config.sightRange,
+        stopRadius
       })
     );
   }

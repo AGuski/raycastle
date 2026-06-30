@@ -14,6 +14,8 @@ export interface Sprite {
   effect?: SpriteEffect;
   /** 0–1 red flash for recent weapon hits; omit when not applicable. */
   getHitFlash?(time: number): number;
+  /** 0–1 pre-strike telegraph glow while an enemy winds up; omit when N/A. */
+  getTelegraph?(time: number): number;
   /** 0–1 death dissolve progress; omit when not applicable. */
   getDeathDissolve?(time: number): number;
 }

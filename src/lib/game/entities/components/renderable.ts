@@ -4,6 +4,7 @@ import { Entity } from '../entity';
 import { Sprite } from '../sprite';
 import { SpriteEffect } from '../spriteEffect';
 import { SpriteAnimator } from '../spriteAnimator';
+import { Attacker } from './attacker';
 import { Damageable } from './damageable';
 import { Strikeable } from './strikeable';
 
@@ -41,18 +42,21 @@ export class Renderable implements Component {
   /** The structural Sprite the existing render passes already read. */
   get view(): Sprite {
     const e = this.entity;
+    const attacker = this.entity.get(Attacker);
     return {
       texture: this.texture,
+      // The attack lunge is a cosmetic offset on top of the entity's position.
       get x() {
-        return e.x;
+        return e.x + (attacker?.getLungeOffset().x ?? 0);
       },
       get y() {
-        return e.y;
+        return e.y + (attacker?.getLungeOffset().y ?? 0);
       },
       animationTime: this.animationTime,
       animator: this.animator,
       effect: this.effect,
       getHitFlash: (t) => this.resolveHitFlash(t),
+      getTelegraph: () => attacker?.getTelegraph() ?? 0,
       getDeathDissolve: (t) => this.resolveDeathDissolve(t)
     };
   }

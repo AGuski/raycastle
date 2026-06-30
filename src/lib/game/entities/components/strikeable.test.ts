@@ -4,7 +4,8 @@ import { resolveKnockbackDistance } from '../../combat/knockback';
 import { MAP_EMPTY } from '../../../types';
 import { ComponentContext } from '../component';
 import { Entity } from '../entity';
-import { Strikeable } from './strikeable';
+import { Damageable } from './damageable';
+import { Strikeable, resolveActorWeaponStrike } from './strikeable';
 
 const openWorld = {
   getBlock: () => MAP_EMPTY,
@@ -91,5 +92,50 @@ describe('Strikeable', () => {
     expect(resolveKnockbackDistance(strength, -1)).toBe(1);
     expect(heavyStrikeable.isKnockedBack()).toBe(true);
     expect(lightStrikeable.isKnockedBack()).toBe(true);
+  });
+
+  it('caps a swing at maxTargets, striking the closest in the cone first', () => {
+    // Five enemies dead-center in the forward cone at increasing distance.
+    const xs = [0.2, 0.3, 0.4, 0.5, 0.6];
+    const enemies = xs.map((x) => {
+      const e = new Entity(x, 0);
+      e.add(new Strikeable(0));
+      e.add(new Damageable(100));
+      return e;
+    });
+
+    const swingCtx: ComponentContext = {
+      ...ctx(0),
+      time: 1,
+      player: { x: 0, y: 0, direction: 0, sheathed: false, swingProgress: 0.5, swingId: 7 }
+    };
+
+    resolveActorWeaponStrike(swingCtx, enemies);
+
+    const hit = enemies.map((e) => e.get(Strikeable)!.wasHitBySwing(7));
+    expect(hit).toEqual([true, true, true, false, false]);
+    expect(hit.filter(Boolean).length).toBe(CONFIG.weapon.strike.maxTargets);
+  });
+
+  it('keeps the per-swing cap across multiple active frames', () => {
+    const xs = [0.2, 0.3, 0.4, 0.5, 0.6];
+    const enemies = xs.map((x) => {
+      const e = new Entity(x, 0);
+      e.add(new Strikeable(0));
+      e.add(new Damageable(100));
+      return e;
+    });
+    const swingCtx: ComponentContext = {
+      ...ctx(0),
+      time: 1,
+      player: { x: 0, y: 0, direction: 0, sheathed: false, swingProgress: 0.5, swingId: 7 }
+    };
+
+    // Same swing resolved twice (two active frames) must not exceed the cap.
+    resolveActorWeaponStrike(swingCtx, enemies);
+    resolveActorWeaponStrike(swingCtx, enemies);
+
+    const hitCount = enemies.filter((e) => e.get(Strikeable)!.wasHitBySwing(7)).length;
+    expect(hitCount).toBe(CONFIG.weapon.strike.maxTargets);
   });
 });

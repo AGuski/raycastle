@@ -4,12 +4,14 @@
 
 	let health = $state(hudState.health);
 	let maxHealth = $state(hudState.maxHealth);
+	let sheathed = $state(hudState.sheathed);
 
 	onMount(() => {
 		let frame = 0;
 		const tick = () => {
 			health = hudState.health;
 			maxHealth = hudState.maxHealth;
+			sheathed = hudState.sheathed;
 			frame = requestAnimationFrame(tick);
 		};
 		frame = requestAnimationFrame(tick);
@@ -19,6 +21,11 @@
 
 <div class="hud" aria-live="polite">
 	HP: {Math.round(health)} / {maxHealth}
+</div>
+
+<div class="weapon-prompt" aria-live="polite">
+	<span>{sheathed ? 'Draw weapon' : 'Sheathe weapon'}</span>
+	<kbd>Q</kbd>
 </div>
 
 <style>
@@ -41,5 +48,42 @@
 		pointer-events: none;
 		user-select: none;
 		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+	}
+
+	.weapon-prompt {
+		position: fixed;
+		right: 12px;
+		bottom: 12px;
+		z-index: 20;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 10px;
+		font:
+			600 14px/1.2 ui-monospace,
+			SFMono-Regular,
+			Menlo,
+			Consolas,
+			monospace;
+		color: rgba(255, 230, 210, 0.95);
+		background: rgba(8, 4, 2, 0.55);
+		border: 1px solid rgba(180, 90, 40, 0.35);
+		border-radius: 4px;
+		pointer-events: none;
+		user-select: none;
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+	}
+
+	.weapon-prompt kbd {
+		display: inline-grid;
+		place-items: center;
+		min-width: 18px;
+		padding: 1px 5px;
+		font: inherit;
+		color: rgba(255, 240, 225, 0.95);
+		background: rgba(180, 90, 40, 0.28);
+		border: 1px solid rgba(220, 130, 70, 0.6);
+		border-radius: 4px;
+		text-shadow: none;
 	}
 </style>

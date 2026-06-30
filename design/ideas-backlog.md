@@ -72,3 +72,19 @@ instability. A risk/reward weather system for places.
 *Relates to:* the "mysterious, impermanent world" flavor that already justifies the
 contention-smoothing grammar; risk/reward loot; visually a natural fit for the
 post-process / shader passes (darkness, haze).
+
+---
+
+## Floor-anchored sprites (fix close/short enemies vanishing)
+
+Sprites are currently billboarded **centered on the horizon** with no vertical
+floor anchoring, so a short, floor-hugging creature's visible pixels sit in the
+lower half of its quad and drop *below the screen bottom* when it gets close —
+the enemy becomes invisible yet can still attack. Today this is worked around with
+a global `combat.minPlayerGap` that stops enemies lunging too close. The real fix
+is to anchor sprites to the floor plane (offset the billboard vertically by
+distance) so near creatures rise into view instead of centering on the horizon,
+which would let enemies get genuinely close without disappearing.
+
+*Relates to:* the `spritePass` billboard projection; enemy melee/lunge feel
+(`minPlayerGap`, attack `reach`); would also improve the look of any low props.

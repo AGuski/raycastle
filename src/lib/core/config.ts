@@ -10,6 +10,8 @@ export const CONFIG = {
   /** Player health and hurt feedback. */
   player: {
     maxHealth: 100,
+    /** Move-speed multiplier while the weapon is drawn (1 = full run speed). */
+    drawnMoveScale: 0.85, // probably should be lower
     hurtVignette: {
       /** Seconds to reach full intensity after a hit. */
       fadeIn: 0.08,
@@ -83,7 +85,12 @@ export const CONFIG = {
       /** Average weapon damage per hit. */
       baseDamage: 10,
       /** Luck spread: multiplier in [1 - luck, 1 + luck]. */
-      damageLuck: 0.25
+      damageLuck: 0.25,
+      /**
+       * Max distinct enemies one swing may strike (closest first). The weapon's
+       * crowd-control cap: low = single-target pokes, high = wide sweeps.
+       */
+      maxTargets: 3
     }
   },
   fixedTimestep: 1 / 60,
@@ -135,8 +142,22 @@ export const CONFIG = {
       proximityRadius: 1.5,
       chaseOnSight: true,
       animationSpeed: 0.7,
-      knockbackResistance: 0,
-      combat: { maxHealth: 35, damage: 8, attackInterval: 1.6 }
+      knockbackResistance: 0.35,
+      combat: {
+        maxHealth: 35,
+        damage: 8,
+        attackInterval: 1.6,
+        attack: {
+          range: 0.7,
+          halfAngle: 0.5,
+          reach: 0.7,
+          windup: 0.25,
+          strikeDuration: 0.12,
+          recovery: 0.27,
+          lunge: 0.15,
+          interruptible: true
+        }
+      }
     },
     garrison: {
       speed: 0.9,
@@ -150,7 +171,21 @@ export const CONFIG = {
         swayAngle: 0.1,
         bobHeight: 0.05
       },
-      combat: { maxHealth: 35, damage: 8, attackInterval: 1.6 }
+      combat: {
+        maxHealth: 35,
+        damage: 8,
+        attackInterval: 1.6,
+        attack: {
+          range: 0.7,
+          halfAngle: 0.5,
+          reach: 0.6,
+          windup: 0.3,
+          strikeDuration: 0.12,
+          recovery: 0.5,
+          lunge: 0.2,
+          interruptible: true
+        }
+      }
     },
     hunterLich: {
       speed: 0.65,
@@ -164,7 +199,21 @@ export const CONFIG = {
         frequency: 0.7,
         amplitude: 0.04
       },
-      combat: { maxHealth: 90, damage: 18, attackInterval: 1.1 }
+      combat: {
+        maxHealth: 90,
+        damage: 18,
+        attackInterval: 1.1,
+        attack: {
+          range: 0.95,
+          halfAngle: 0.4,
+          reach: 0.9,
+          windup: 0.4,
+          strikeDuration: 0.1,
+          recovery: 0.4,
+          lunge: 0.45,
+          interruptible: true
+        }
+      }
     },
     warden: {
       speed: 0.45,
@@ -173,7 +222,23 @@ export const CONFIG = {
       chaseOnSight: true,
       animationSpeed: 0.45,
       knockbackResistance: 0.95,
-      combat: { maxHealth: 120, damage: 22, attackInterval: 2.4 }
+      /** Heavy body-block: the player cannot walk through the Warden. */
+      blockRadius: 0.45,
+      combat: {
+        maxHealth: 120,
+        damage: 22,
+        attackInterval: 2.4,
+        attack: {
+          range: 1.3,
+          halfAngle: 0.6,
+          reach: 1.2,
+          windup: 1.0,
+          strikeDuration: 0.16,
+          recovery: 0.8,
+          lunge: 0.35,
+          interruptible: false
+        }
+      }
     },
     skitterling: {
       speed: 2,
@@ -182,7 +247,21 @@ export const CONFIG = {
       chaseOnSight: true,
       animationSpeed: 1.35,
       knockbackResistance: -2,
-      combat: { maxHealth: 10, damage: 3, attackInterval: 0.45 }
+      combat: {
+        maxHealth: 10,
+        damage: 3,
+        attackInterval: 0.45,
+        attack: {
+          range: 0.9,
+          halfAngle: 0.55,
+          reach: 0.6,
+          windup: 0.15,
+          strikeDuration: 0.1,
+          recovery: 0.3,
+          lunge: 0.6,
+          interruptible: true
+        }
+      }
     }
   },
   textures: {
